@@ -85,6 +85,8 @@ userHandler(Sock,LoginManager) ->
 		{tcp_error, _, _} ->
 			io:format("tcp error\n"),
 			LoginManager ! {logout, self()}
+		%after 10000 -> 
+		%	% jbbj
   	end.
 
 autenticado(Sock,LoginManager,User, Type) ->
