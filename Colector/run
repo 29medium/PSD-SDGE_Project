@@ -1,0 +1,3 @@
+#!/bin/bash
+
+erl -pa ebin -eval "tcpHandler:run(1234)" #;tcpHandler:run(1235)"
