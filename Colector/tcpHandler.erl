@@ -32,14 +32,15 @@ userHandler(Sock,LoginManager) ->
 			gen_tcp:send(Sock,"User já existe com esse username\n"),
 			io:format("User já existe com esse username\n"),
 			userHandler(Sock, LoginManager);
-		{_ ,logged, User} ->
+		{_ ,logged, User, Type} ->
 			inet:setopts(Sock, [{active, once}]),
 			gen_tcp:send(Sock,"Logged in\n"),
 			io:format("Logged in\n"),
-			autenticado(Sock,LoginManager,User);
+			autenticado(Sock,LoginManager,User,Type);
 		{_ ,invalid} ->
 			inet:setopts(Sock, [{active, once}]),
-			io:format("Invalid\n");
+			io:format("Invalid\n"),
+			userHandler(Sock, LoginManager);
 		{tcp, _, "register " ++ Data} ->
 			Args = string:tokens(Data, [$\s]),
 			io:format("Register Args: ~p\n",[Args]),
@@ -66,10 +67,11 @@ userHandler(Sock,LoginManager) ->
 		{tcp, _, "login " ++ Data} ->
 			Args = string:tokens(Data, [$\s]),
 			case mylength(Args) of 
-				2 ->
+				3 ->
 					User = lists:nth(1,Args),
-					Pass = string:trim(lists:nth(2,Args)),
-					LoginManager ! {login, User, Pass, self()},
+					Pass = lists:nth(2,Args),
+					Type = string:trim(lists:nth(3,Args)),
+					LoginManager ! {login, User, Pass, Type,self()},
 					inet:setopts(Sock, [{active, once}]),
 					userHandler(Sock,LoginManager);
 				_ -> 
@@ -78,23 +80,25 @@ userHandler(Sock,LoginManager) ->
 					userHandler(Sock,LoginManager)
 			end;
 		{tcp_closed, _} ->
+			io:format("tcp closed\n"),
 			LoginManager ! {logout, self()};
 		{tcp_error, _, _} ->
+			io:format("tcp error\n"),
 			LoginManager ! {logout, self()}
   	end.
 
-autenticado(Sock,LoginManager,User) ->
+autenticado(Sock,LoginManager,User, Type) ->
 	receive
 		{tcp,_,"event " ++ Data} ->
 			inet:setopts(Sock, [{active, once}]),
 			gen_tcp:send(Sock,"Evento registado\n"),
 			io:format("Evento! ~p\n",[Data]),
-			autenticado(Sock,LoginManager,User);
-		{tcp, _, "logout"} ->
+			autenticado(Sock,LoginManager,User,Type);
+		{tcp, _, "logout\n"} ->
 			LoginManager ! {logout,User,self()},
 			inet:setopts(Sock, [{active, once}]),
-			gen_tcp:send(Sock,"Evento registado\n"),
-			autenticado(Sock,LoginManager,User)
+			gen_tcp:send(Sock,"Logged out...\n"),
+			autenticado(Sock,LoginManager,User,Type)
 	end.
 	
 

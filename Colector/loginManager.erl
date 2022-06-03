@@ -2,7 +2,7 @@
 -export([run/0, create_account/2, close_account/2, login/2, logout/1, user_pid/1]).
 
 run() -> 
-	register(?MODULE, spawn ( fun() -> loginManager(#{}) end) ).
+	register(?MODULE, spawn ( fun() -> loginManager(#{"user1"=>{"1234",false}}) end) ).
 
 create_account(User, Pass) ->
 	?MODULE ! {create_account, User, Pass, self()},
@@ -48,10 +48,10 @@ loginManager(Map) ->
           			loginManager(Map)
       		end;
 
-    	{login, User, Pass, From} ->
+    	{login, User, Pass, Type,From} ->
       		case maps:find(User, Map) of
         		{ok, {Pass, false}} ->
-          			From ! {?MODULE, logged, User},
+          			From ! {?MODULE, logged, User,Type},
           			loginManager(maps:update(User, {Pass, From}, Map));
         		_ -> 
           			From ! {?MODULE, invalid},
