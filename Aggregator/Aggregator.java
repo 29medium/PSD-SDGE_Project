@@ -1,5 +1,7 @@
 package Aggregator;
 
+import org.zeromq.SocketType;
+import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 public class Aggregator {
