@@ -1,13 +1,33 @@
+from fileinput import close
 import socket
 import sys
 import time
 import random
+import json
 
-dic = {
-    "car" : ["accelerate", "brake", "hand-brake on", "hand-brake off", "turn-left", "turn-right"],
-    "light" : ["on", "off"],
-    "drone" : ["up", "down"]
-}
+file = open("../files/devices.json")
+dic = json.load(file)
+
+class Device:
+    def __init__(self,host,port):
+        self.host = host
+        self.port = port
+        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+    def sig_int_handler(self,signal,frame):
+        pass
+
+    def connect(self):
+        self.socket.connect((self.host, self.port))
+    
+    def send(self,msg):
+        self.socket.sendall(msg.encode('utf-8'))
+
+    def recv(self,bytes):
+        return self.socket.recv(bytes).decode('utf-8')
+
+    def close(self):
+        self.socket.close()
 
 def main():
     args = sys.argv[1:]
@@ -18,27 +38,34 @@ def main():
         #HOST = args[3]
         #PORT = int(args[4])
 
-        HOST = "localhost"
-        PORT = 1234
+        HOST = "localhost" # test only
+        PORT = 1234        # test only
 
         if(args[2] in dic):
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((HOST, PORT))
+            device = Device(HOST,PORT)
+            device.connect()
             
             msg = "login " + args[0] + " " + args[1] + " " + args[2] + "\n"
-            s.sendall(msg.encode('utf-8'))
+            try:
+                device.send(msg)
 
-            resp = s.recv(1024)
-            print(resp)
+                resp = device.recv(1024)
+                if "success" in resp.lower():
+                    print("success!!!")
+                else:
+                    print(resp)
 
-            if resp :
-                while(True):
-                    time.sleep(2)
-                    event = random.choice(dic[args[2]])
-                    msg = "event " + event + "\n"
-                    s.sendall(msg.encode("utf8"))
-            else:
-                print("Login failed")
+                if resp :
+                    while(True):
+                        time.sleep(2)
+                        event = random.choice(dic[args[2]])
+                        msg = "event " + event + "\n"
+                        device.send(msg)
+                else:
+                    print("Login failed")
+            finally:
+                device.close()
+    
         else:
             print("Wrong type")
     else:

@@ -45,7 +45,7 @@ userHandler(Sock,LoginManager, PushSocket) ->
 			userHandler(Sock, LoginManager, PushSocket);
 		{_ ,logged, User, Type} ->
 			inet:setopts(Sock, [{active, once}]),
-			%gen_tcp:send(Sock,"Logged in\n"),
+			gen_tcp:send(Sock,"Success\n"),
 			io:format("Logged in\n"),
 			ok = chumak:send(PushSocket,"loggin|"++User++"|"++Type),
 			autenticado(Sock,LoginManager,User, PushSocket);
@@ -105,17 +105,50 @@ autenticado(Sock,LoginManager,User, PushSocket) ->
 			inet:setopts(Sock, [{active, once}]),
 			%gen_tcp:send(Sock,"Evento registado\n"),
 			io:format("Evento! ~p\n",[Data]),
-			ok = chumak:send(PushSocket,"event|" ++ User ++"|"++Data),
+			ok = chumak:send(PushSocket,"event|" ++ User ++"|"++string:trim(Data)),
 			autenticado(Sock,LoginManager,User, PushSocket);
 		{tcp, _, "logout\n"} ->
 			LoginManager ! {logout,User,self()},
 			inet:setopts(Sock, [{active, once}]),
 			ok = chumak:send(PushSocket,"logout|"++User),
 			%gen_tcp:send(Sock,"Logged out...\n"),
-			autenticado(Sock,LoginManager,User, PushSocket)
+			autenticado(Sock,LoginManager,User, PushSocket);
+		{tcp_closed, _} ->
+			io:format("tcp closed\n"),
+			ok = chumak:send(PushSocket,"logout|"++User),
+			LoginManager ! {logout, self()};
+		{tcp_error, _, _} ->
+			io:format("tcp error\n"),
+			ok = chumak:send(PushSocket,"logout|"++User),
+			LoginManager ! {logout, self()}
 		after 5000 -> 
 			io:format("Inativo ~p!!",[User]),
-			ok = chumak:send(PushSocket,"inactive|"++User)
+			ok = chumak:send(PushSocket,"inactive|"++User),
+			inactive(Sock,LoginManager,User,PushSocket)
+	end.
+
+inactive(Sock,LoginManager,User, PushSocket) ->
+	receive
+		{tcp,_,"event " ++ Data} ->
+			inet:setopts(Sock, [{active, once}]),
+			%gen_tcp:send(Sock,"Evento registado\n"),
+			io:format("Evento! ~p\n",[Data]),
+			ok = chumak:send(PushSocket,"event|" ++ User ++"|"++string:trim(Data)),
+			autenticado(Sock,LoginManager,User, PushSocket);
+		{tcp, _, "logout\n"} ->
+			LoginManager ! {logout,User,self()},
+			inet:setopts(Sock, [{active, once}]),
+			ok = chumak:send(PushSocket,"logout|"++User),
+			%gen_tcp:send(Sock,"Logged out...\n"),
+			autenticado(Sock,LoginManager,User, PushSocket);
+		{tcp_closed, _} ->
+			io:format("tcp closed\n"),
+			ok = chumak:send(PushSocket,"logout|"++User),
+			LoginManager ! {logout, self()};
+		{tcp_error, _, _} ->
+			io:format("tcp error\n"),
+			ok = chumak:send(PushSocket,"logout|"++User),
+			LoginManager ! {logout, self()}
 	end.
 	
 
