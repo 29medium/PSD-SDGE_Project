@@ -15,7 +15,7 @@ public class Aggregator {
             ZMQ.Socket pull = context.createSocket(SocketType.PULL);
             ZMQ.Socket pub = context.createSocket(SocketType.PUB)) 
         {
-            //pull.connect("tcp://localhost:" + args[0]);
+            pull.bind("tcp://localhost:" + args[0]);
             pub.bind("tcp://localhost:" + args[0]);
 
             Thread t_pull = new Thread(new Pull(pull)); 

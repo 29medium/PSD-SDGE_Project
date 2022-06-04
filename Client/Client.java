@@ -10,8 +10,6 @@ public class Client {
         try(ZContext context = new ZContext();
             ZMQ.Socket sub = context.createSocket(SocketType.SUB)) 
         {
-            //ZMQ.Socket pull = context.createSocket(SocketType.PULL);
-            //pull.connect("tcp://localhost:" + args[0]);
             sub.connect("tcp://localhost:" + args[0]);
             
             if (args.length == 1)

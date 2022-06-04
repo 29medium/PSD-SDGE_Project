@@ -11,7 +11,9 @@ public class Pull implements Runnable {
 
     @Override
     public void run() {
-        
+        while (true) {
+            byte[] msg = pull.recv();
+            System.out.println(new String(msg));
+        }
     }
-    
 }
