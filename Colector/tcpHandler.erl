@@ -2,6 +2,17 @@
 -export([run/1, acceptor/2, userHandler/2]).
 
 run(Port) -> 
+	application:start(chumak),
+	{ok,PushSocket} = chumak:socket(push),
+	case chumak:connect(PushSocket,tcp,"localhost",Port+1) of
+		{ok, _BindPid} ->
+			io:format("Binding OK, with Pid ~p\n",[_BindPid]);
+		{error, Reason}->
+			io:format("Connection failed: ~p\n",[Reason]);
+		X ->
+			io:format("Undhandled reply for bind ~p\n",[X])
+	end,
+
     {ok, LSock} = gen_tcp:listen(Port, [{active, once}, {packet, line},
                                       {reuseaddr, true}]),
 	loginManager:run(),
