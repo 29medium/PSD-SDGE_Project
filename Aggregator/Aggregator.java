@@ -16,13 +16,11 @@ public class Aggregator {
             ZMQ.Socket pub = context.createSocket(SocketType.PUB)) 
         {
             pull.bind("tcp://localhost:" + args[0]);
-            pub.bind("tcp://localhost:" + args[0]);
+            pub.bind("tcp://localhost:" + args[1]);
 
-            Thread t_pull = new Thread(new Pull(pull)); 
-            Thread t_pub = new Thread(new Publisher(pub));
+            Thread t_pull = new Thread(new Pull(pull, pub, devices)); 
 
             t_pull.start();
-            t_pub.start();
         }
     }
 }
