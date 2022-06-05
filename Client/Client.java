@@ -5,83 +5,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 public class Client {
-    private Map<Integer,Boolean> notificacoes;
+    private Notification notification;
     private ZMQ.Socket sub;
-    private String[] tipos = {"carro","aviao","bicicleta"};
 
     
-    public Client(Map<Integer,Boolean> notificacoes,ZMQ.Socket sub) {
-        this.notificacoes = notificacoes;
+    public Client(ZMQ.Socket sub) {
+        this.notification = new Notification();
         this.sub = sub;
     }
 
-    private void printLine(int size) {
-        for(int i=0; i<size; i++)
-            System.out.print("-");
+    public boolean lerSN(){
+        Scanner s = new Scanner(System.in);
+        String line;
 
-        System.out.println("");
-    }
+        do{
+           System.out.println("Pretende ativar ou desativar notificações? (S/N):");
+            line = s.nextLine();
+        } while (!line.toUpperCase().equals("S") && !line.toUpperCase().equals("N"));
 
-    private void printMenu(String []menu, String message){
-
-        int size, length=message.length();
-
-        for(String linha: menu)
-            if(linha.length() + 4 > length)
-                length = linha.length() + 4;
-
-        if(length < 20)
-            length = 20;
-
-        printLine(length);
-        System.out.println(message);
-        printLine(length);
-
-        size = menu.length;
-        for(int i = 0;i < size;i++)
-            System.out.println(i+1+" | "+menu[i]);
-
-            System.out.println("0 | Sair");
-    }
-
-    private void printMenuNotificacoes(boolean t1,boolean t2,boolean t3,boolean t4) {
-        String s1,s2,s3,s4;
-        if(t1)
-            s1 = "Desativar notificações 'Sem Dispositivos Online'";
-        else
-            s1 = "Ativar notificações 'Sem Dispositivos Online'";
-
-        if(t2)
-            s2 = "Desativar notificações 'Record de Dispositivos Online'";
-        else
-            s2 = "Ativar notificações 'Record de Dispositivos Online'";
-
-        if(t3)
-            s3 = "Desativar notificações 'Subida de Dispositivos Online";
-        else
-            s3 = "Ativar notificações 'Subida de Dispositivos Online";
-
-        if(t4)
-            s4 = "Desativar notificações 'Descida de Dispositivos Online";
-        else
-            s4 = "Ativar notificações 'Descida de Dispositivos Online";
-
-        printMenu((new String[]{s1,s2,s3,s4}),"NOTIFICAÇÕES");
-    }
-
-    private void printMenuPrincipal(){
-        printMenu((new String[]{"Notificações","Pedidos"}),"MENU");
-    }
-
-    private void printMenuPedidos(){
-        printMenu((new String[]{"Pedidos"}),"PEDIDOS");
+        return line.toUpperCase().equals("S");
     }
 
     private int lerInt(int min, int max){
@@ -102,37 +50,45 @@ public class Client {
         return n;
     }
 
+    private void sub(int command){
+        boolean r = lerSN();
+        if (r){
+            List<String> types = notification.getNotInnactives(command);
+            printMenu(types,"TIPOS");
+            int op = lerInt(0,types.size());
+            String type = notification.getType(op);
+            notification.setActive(command, type);
+            if(op>0)
+                this.sub.subscribe("offline-"+type);
+        } else{
+            List<String> types = notification.getNotActives(command);
+            printMenu(types,"TIPOS ATIVOS");
+            int op = lerInt(0,types.size());
+            String type = notification.getType(op);
+            notification.setInnactive(command, type);
+            if(op>0)
+                this.sub.unsubscribe("offline-"+notification.getType(op));
+        }
+    }
+
     private void controlerN() {
         int command;
-        boolean on = true,t;
+        boolean on = true;
 
         while (on) {
-            printMenuNotificacoes(notificacoes.get(1), notificacoes.get(2), notificacoes.get(3), notificacoes.get(4));
+            printMenuNotificacoes();
             command = lerInt(0, 4);
 
             switch (command) {
                 case 1:
-                    t = !notificacoes.get(1);
-                    if (t){
-                        // input do utilizador
-                        this.sub.subscribe("offline-"+tipo);
-                    }
-                    else{
-                        this.sub.unsubscribe("offline-"+tipo)
-                    }
-                    notificacoes.put(1, t);
+                    sub(command);
                     break;
                 case 2:
-                    t = !notificacoes.get(2);
-                    notificacoes.put(2, t);
+                    sub(command);
                     break;
                 case 3:
-                    t = !notificacoes.get(3);
-                    notificacoes.put(3, t);
                     break;
                 case 4:
-                    t = !notificacoes.get(4);
-                    notificacoes.put(4, t);
                     break;
                 case 0:
                     controler();
@@ -156,7 +112,7 @@ public class Client {
                     System.out.println("pedido 1");
                     break;
                 case 2:
-                    System.out.println("pedido");;
+                    System.out.println("pedido 2");;
                     break;
                 case 0:
                     controler();
@@ -169,7 +125,7 @@ public class Client {
 
     private void controler() {
         int command;
-        boolean on = true,t;
+        boolean on = true;
 
         while (on) {
             printMenuPrincipal();
@@ -192,10 +148,7 @@ public class Client {
     }
 
     public void run(String[] args) {
-     
-        controler();
-        
-        
+        controler(); 
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -210,9 +163,59 @@ public class Client {
             sub.connect("tcp://localhost:" + args[0]);
             Thread reader = new Thread(new ClientReader(sub));
             reader.start();
-            (new Client(notificacoes,sub)).run(args);
+            (new Client(sub)).run(args);
+        }  
+    }
+
+    private void printLine(int size) {
+        for(int i=0; i<size; i++)
+            System.out.print("-");
+
+        System.out.println("");
+    }
+
+    private void printMenu(List<String> menu, String message){
+
+        int size = 0, length=message.length();
+
+        for(String linha: menu){
+            if(linha.length() + 4 > length)
+                length = linha.length() + 4;
         }
 
-        
+        if(length < 20)
+            length = 20;
+
+        printLine(length);
+        System.out.println(message);
+        printLine(length);
+
+        size = menu.size();
+        for(int i = 0;i < size;i++)
+            System.out.println(i+1+" | "+menu.get(i));
+
+            System.out.println("0 | Sair");
+    }
+
+    private void printMenuNotificacoes() {
+        List<String> l = new ArrayList<>();
+        l.add( "Notificações 'Sem Dispositivos Online'");
+        l.add("Notificações 'Record de Dispositivos Online'");
+        l.add( "Notificações 'Subida de Dispositivos Online");
+        l.add("Notificações 'Descida de Dispositivos Online");
+        printMenu(l,"NOTIFICAÇÕES");
+    }
+
+    private void printMenuPrincipal(){
+        List<String> l = new ArrayList<>();
+        l.add("Notificações");
+        l.add("Pedidos");
+        printMenu(l,"MENU");
+    }
+
+    private void printMenuPedidos(){
+        List<String> l = new ArrayList<>();
+        l.add("Pedidos");
+        printMenu(l,"PEDIDOS");
     }
 }

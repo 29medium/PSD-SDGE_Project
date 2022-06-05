@@ -5,7 +5,7 @@ import time
 import random
 import json
 
-file = open("../files/devices.json")
+file = open("files/devices.json")
 dic = json.load(file)
 
 class Device:

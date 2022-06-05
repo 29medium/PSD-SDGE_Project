@@ -11,14 +11,18 @@ public class Aggregator {
     private ZMQ.Socket pull;
     private ZMQ.Socket pub;
     private Map<String,Device> devices;
+    private Map<String,Integer> record;
+    int record_total;
 
     public Aggregator(ZMQ.Socket pull, ZMQ.Socket pub, Map<String,Device> devices) {
         this.pull = pull;
         this.pub = pub;
         this.devices = devices;
+        this.record_total = 0;
     }
 
     private void intreperter(String msg) {
+        System.out.println(msg);
         String[] args = msg.split("|");
 
         if(args[0]=="login") {
@@ -26,16 +30,42 @@ public class Aggregator {
                 Device d = devices.get(args[1]);
                 d.setOnline(true);
                 d.setActive(true);
+                
                 devices.put(args[1], d);
             } else {
                 Device d = new Device(args[1], args[2], true, true);
                 devices.put(args[1], d);
+            }
+
+            if(record.containsKey(args[2])) {
+                int current = (int) devices.values().stream().filter(x -> x.getType().equals(args[2]) || x.isOnline()).count();
+                if(current > record.get(args[2])){
+                    record.put(args[2], current);
+                    pub.send("record-" + args[2]);
+                    System.out.println("record-" + args[2]);
+                }
+            } else {
+                record.put(args[2], 1);
+                pub.send("record-" + args[2]);
+                System.out.println("record-" + args[2]);
+            }
+
+            int current_total = (int) devices.values().stream().filter(x -> x.isOnline()).count();
+            if(current_total>record_total) {
+                record_total = current_total;
+                pub.send("record");
+                System.out.println("record");
             }
         } else if(args[0]=="logout") {
             Device d = devices.get(args[1]);
             d.setOnline(false);
             d.setActive(false);
             devices.put(args[1], d);
+
+            if(!devices.values().stream().filter(x -> x.getType().equals(args[2])).anyMatch(x -> x.getOnline())){
+                pub.send("offline-" + args[2]);
+                System.out.println("offline-" + args[2]);
+            }
         } else if(args[0]=="event") {
             Device d = devices.get(args[1]);
             d.addEvent(args[2]);
@@ -53,7 +83,6 @@ public class Aggregator {
         while (true) {
             byte[] msg = pull.recv();
             intreperter(new String(msg));
-            pub.send(new String(msg));
         }
     }
 
