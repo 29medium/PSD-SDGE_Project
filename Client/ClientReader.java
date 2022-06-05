@@ -16,6 +16,5 @@ public class ClientReader implements Runnable{
             byte[] msg = this.sub.recv();
             System.out.println(new String(msg));
         }
-    
     }
 }

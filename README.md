@@ -15,6 +15,8 @@
 ### Portas
 1. Coletor - Porta | Agregador - Porta+1
 2. Coletor - Porta + 100 | Agregador - Porta + 100 + 1
+3. Aggregador - Porta PULL | Porta+1 PUSH | Porta+2 REP
+4. Client - Porta SUB | Porta+1 REQ
 
 ### Notificações
 1. notificar quando deixar de haver dispositivos online de um dado **tipo** na zona
