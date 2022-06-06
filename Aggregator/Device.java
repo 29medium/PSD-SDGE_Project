@@ -17,6 +17,10 @@ public class Device {
         this.active = active;
         this.events = new HashMap<>();
     }
+    
+    public Device(String serialized){
+        this.deserialize(serialized);
+    }
 
     public String getId() {
         return this.id;
@@ -38,19 +42,11 @@ public class Device {
         return this.online;
     }
 
-    public boolean getOnline() {
-        return this.online;
-    }
-
     public void setOnline(boolean online) {
         this.online = online;
     }
 
     public boolean isActive() {
-        return this.active;
-    }
-
-    public boolean getActive() {
         return this.active;
     }
 
@@ -65,6 +61,52 @@ public class Device {
             events.put(event, counter);
         } else {
             events.put(event, 1);
+        }
+    }
+
+    public int getNumEvents(String event) {
+        if(events.containsKey(event)) {
+            return events.get(event);
+        } else
+            return 0;
+    }
+
+    public String serialize() {
+        //id:type:online:active:event1_int<event2_int<event3_int
+        StringBuilder sb = new StringBuilder();
+        sb.append(id)
+          .append(":")
+          .append(type)
+          .append(":")
+          .append(String.valueOf(online))
+          .append(":")
+          .append(String.valueOf(active))
+          .append(":");
+
+        for(Map.Entry<String, Integer> e : this.events.entrySet()) {
+            sb.append(e.getKey()).append("_").append(String.valueOf(e.getValue())).append("<");
+        }
+
+        String s = sb.toString();
+        return s.substring(1, s.length() - 1);
+    }
+
+    private void deserialize(String serialized){
+        String[] args = serialized.split(":");
+
+        if(args.length != 5)
+            return;
+
+        this.id = args[0];
+        this.type = args[1];
+        this.online = Boolean.parseBoolean(args[2]);
+        this.active = Boolean.parseBoolean(args[3]);
+
+        this.events = new HashMap<>();
+        String[] tokens = args[4].split("<");
+        for(String t : tokens) {
+            String[] entry = t.split("_");
+            this.events.put(entry[0],Integer.parseInt(entry[1]));
         }
     }
 }

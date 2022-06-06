@@ -4,14 +4,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Notification {
     private List<String> types;
+    private List<String> events;
     private Map<String, Boolean> not1;
     private Map<String, Boolean> not2;
     private boolean not2All;
-    private List<Float> not3;
-    private List<Float> not4;
+    private Set<Integer> not3;
+    private Set<Integer> not4;
 
     public Notification() {
         types = new ArrayList<>();
@@ -31,23 +34,8 @@ public class Notification {
 
         not2All = false;
 
-        not3 = new ArrayList<>();
-        not4 = new ArrayList<>();
-    }
-
-    public List<String> getNotActives(int noti) {
-        List<String> res = new ArrayList<>();
-
-        if (noti == 1) {
-            for (String s : types)
-                if (not1.get(s))
-                    res.add(s);
-        } else {
-            for (String s : types)
-                if (not2.get(s))
-                    res.add(s);
-        }
-        return res;
+        not3 = new TreeSet<>();
+        not4 = new TreeSet<>();
     }
 
     public List<String> getTypes(int noti) {
@@ -55,25 +43,10 @@ public class Notification {
 
         if (noti == 1) {
             for (String s : types)
-                res.add(s+not1.get(s));
+                res.add(s+" "+not1.get(s));
         } else {
             for (String s : types)
-                res.add(s+not2.get(s));
-        }
-        return res;
-    }
-
-    public List<String> getNotInnactives(int noti) {
-        List<String> res = new ArrayList<>();
-
-        if (noti == 1) {
-            for (String s : types)
-                if (!not1.get(s))
-                    res.add(s);
-        } else {
-            for (String s : types)
-                if (!not2.get(s))
-                    res.add(s);
+                res.add(s+" "+not2.get(s));
         }
         return res;
     }
@@ -86,20 +59,35 @@ public class Notification {
     }
 
     public List<String> getXs(int noti) {
-        int size;
-        List<Float> l;
-        if (noti == 3) {
-            size = not3.size();
+        Set<Integer> l;
+        if (noti == 3) 
             l = not3;
-        } else {
-            size = not4.size();
+        else 
             l = not4;
-        }
 
         List<String> res = new ArrayList<>();
 
-        for (Float i : l)
-            res.add("" + i);
+        for (Integer i : l)
+            res.add("Desativar " + i + "%");
+
+        return res;
+    }
+
+    public int getX(int command,int index){
+        Set<Integer> l;
+        if (command == 3) 
+            l = not3;
+        else 
+            l = not4;
+
+        int res = -1;
+        for (Integer i : l) {
+            if(index == 0){
+                res = i;
+                break;
+            }
+            index--;
+        }
 
         return res;
     }
@@ -137,23 +125,42 @@ public class Notification {
         }
     }
 
-    public void setX(int noti, float v) {
+    public void setX(int noti, int v) {
         if (noti == 3)
             not3.add(v);
         else
             not4.add(v);
     }
 
-    public void removeX(int noti, float v) {
+    public boolean containsX(int noti, int v) {
         if (noti == 3)
+            return not3.contains(v);
+        else
+            return not4.contains(v);
+    }
+
+    public void removeX(int noti, int v) {
+        if (noti == 3){
             if (not3.contains(v))
                 not3.remove(v);
-            else if (not4.contains(v))
+        } else if (not4.contains(v))
                 not4.remove(v);
     }
 
     public String getType(int id) {
         return types.get(id);
+    }
+
+    public String getEvent(int id) {
+        return events.get(id);
+    }
+
+    public List<String> getTypes() {
+        return new ArrayList<>(types);
+    }
+
+    public List<String> getEvents() {
+        return new ArrayList<>(events);
     }
 
     public boolean isNot2All() {
@@ -163,4 +170,6 @@ public class Notification {
     public void setNot2All(boolean not2All) {
         this.not2All = not2All;
     }
+
+
 }

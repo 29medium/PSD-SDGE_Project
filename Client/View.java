@@ -52,7 +52,10 @@ public class View {
 
     public static void printMenuPedidos(){
         List<String> l = new ArrayList<>();
-        l.add("Pedidos");
+        l.add("Número de dispositivos de um dado tipo online no sistema");
+        l.add("Verificar se um dispositivo está online no sistema");
+        l.add("Número de dispositivos ativos no sistema");
+        l.add("Número de eventos de um dado tipo ocorridos no sistema");
         printMenu(l,"PEDIDOS");
     }
 }

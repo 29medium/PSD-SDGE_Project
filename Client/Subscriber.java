@@ -2,10 +2,10 @@ package Client;
 
 import org.zeromq.ZMQ;
 
-public class ClientReader implements Runnable{
+public class Subscriber implements Runnable{
     private ZMQ.Socket sub;
 
-    public ClientReader(ZMQ.Socket sub) {
+    public Subscriber(ZMQ.Socket sub) {
         this.sub = sub;
     }
 

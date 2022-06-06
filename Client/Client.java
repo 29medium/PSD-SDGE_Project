@@ -11,11 +11,13 @@ public class Client {
     private Scanner s;
     private Notification notification;
     private ZMQ.Socket sub;
+    private ZMQ.Socket req;
 
-    public Client(ZMQ.Socket sub) {
+    public Client(ZMQ.Socket sub, ZMQ.Socket req) {
         this.s = new Scanner(System.in);
         this.notification = new Notification();
         this.sub = sub;
+        this.req = req;
     }
 
     public boolean lerSN(String st){
@@ -31,9 +33,15 @@ public class Client {
 
     private int lerInt(int min, int max){
         int n = -1;
+        String str;
+        if(max  < 100)
+            str = "Insira uma opção:";
+        else
+            str = "Insira um valor de 0 a 100:";
+
 
         do{
-            System.out.println("Insira uma opção:");
+            System.out.println(str);
             try {
                 String line = s.nextLine();
                 n = Integer.parseInt(line);
@@ -46,12 +54,12 @@ public class Client {
         return n;
     }
 
-    private void sub1(int command){
+    private void command1(int command){
         int op;
         String type;
         boolean state;
         List<String> not = notification.getTypes(command);
-        View.printMenu(not, "Notifications:");
+        View.printMenu(not, "Notifications (Type State)");
 
         op = lerInt(0, not.size());
         if (op > 0) {
@@ -64,85 +72,106 @@ public class Client {
         }
     }
 
-    private void sub2(int command){
+    private void command2(int command){
         int op;
         String type;
         boolean state;
 
-        if (!notification.isNot2All()) {
-            state = lerSN("Pretende ativar notificações para qualquer tipo? (S/N):");
-            if (state) {
+        state = notification.isNot2All();
+        List<String> not = notification.getTypes(command);
+        not.add("Todos "+state);
+        View.printMenu(not, "Notifications (Type State)");
+
+        op = lerInt(0, not.size());
+
+        if(op == not.size()){
+            if(state){
+                this.sub.unsubscribe("record-");
+                notification.setNot2All(false);
+            } else {
                 this.sub.subscribe("record-");
                 notification.setNot2All(true);
             }
-        }
-
-        if (!notification.isNot2All()){
-
-        List<String> not = notification.getTypes(command);
-        View.printMenu(not, "Notifications:");
-
-        op = lerInt(0, not.size());
-        if (op > 0) {
+            
+        }else if (op > 0) {
             type = notification.getType(op - 1);
             state = notification.setOpposite(command, type);
-                if(state)
-                    this.sub.subscribe("record-"+type);
+            if(state)
+                this.sub.subscribe("record-"+type);
+            else
+                this.sub.unsubscribe("record-"+type);
+        }
+    }
+
+    private void command34(int command){
+        int op,value;
+        List<String> values = notification.getXs(command);
+        values.add("Adiconar X%");
+        View.printMenu(values, "Notificações (X%)");
+        op = lerInt(0, values.size());
+
+        if(op == values.size()){
+            value = lerInt(0, 100);
+            if(!notification.containsX(command, value)){
+                notification.setX(command, value);
+                if(command == 3)
+                    this.sub.subscribe("percentUp-"+value);
                 else
-                    this.sub.unsubscribe("record-"+type);
+                    this.sub.subscribe("percentDown-"+value);
+            }
+        }else {
+            value = notification.getX(command,op-1);
+            if(notification.containsX(command, value)){
+                notification.removeX(command, value);
+                if(command == 3)
+                    this.sub.unsubscribe("percentUp-"+value);
+                else
+                    this.sub.unsubscribe("percentDown-"+value);
             }
         }
     }
 
-    private void sub(int command){
-        List<String> types;
+    private void pedido14(int command){
         int op;
-        String type;
-        boolean r = lerSN("Pretende ativar ou desativar notificações? (S/N):");
-        if (r){
-            if(command == 2) {
-                if (!notification.isNot2All()) {
-                    r = lerSN("Pretende ativar notificações para qualquer tipo? (S/N):");
-                    if (r) {
-                        this.sub.subscribe("record-");
-                        notification.setNot2All(true);
-                    }
-                } else
-                    System.out.println("Notificações ativas para record de qualquer tipo!");
-            }  else if(command == 1 || !r) {
-                types = notification.getNotInnactives(command);
-                View.printMenu(types, "TIPOS");
-                op = lerInt(0, types.size());
-                if (op > 0) {
-                    type = notification.getType(op - 1);
-                    notification.setActive(command, type);
-                    if(command == 1)
-                        this.sub.subscribe("offline-"+type);
-                    else
-                        this.sub.subscribe("record-"+type);
-                }
-            }
-        } else {
-            if(command == 2 && notification.isNot2All()) {
-                r = lerSN("Pretende desativar notificações para qualquer tipo? (S/N):");
-                if (r) {
-                    this.sub.unsubscribe("record-");
-                    notification.setNot2All(false);
-                }
-            } else {
-                types = notification.getNotActives(command);
-                View.printMenu(types, "TIPOS ATIVOS");
-                op = lerInt(0, types.size());
-                if (op > 0) {
-                    type = notification.getType(op - 1);
-                    notification.setInnactive(command, type);
-                    if(command == 1)
-                        this.sub.unsubscribe("offline-"+type);
-                    else
-                        this.sub.unsubscribe("record-"+type);
-                }
+        List<String> values;
+        if(command == 1) 
+            values = notification.getTypes();
+        else
+            values = notification.getEvents();
+
+        View.printMenu(values, "Pedido (Type)");
+        op = lerInt(0, values.size());
+
+        if(op > 0){
+            if(command == 1){
+                String type = notification.getType(op - 1);
+                req.send("1,"+ type);
+                String res = req.recvStr();
+                System.out.println("Número de dispositivos do tipo " + type + " online: " + res);
+            }else if(command == 4){
+                String event = notification.getEvent(op - 1);
+                req.send("4,"+ event);
+                String res = req.recvStr();
+                System.out.println("Número de eventos do tipo " + event + ": " + res);
             }
         }
+    }
+
+    private void pedido2(){
+        System.out.println("Insira um ID de dispositivo:");
+        String id = s.nextLine();
+
+        req.send("2,"+ id);
+        if(Boolean.parseBoolean(req.recvStr()))
+            System.out.println("O dispositivo " + id + " está online no sistema");
+        else
+            System.out.println("O dispositivo " + id + " não está online no sistema");
+    }
+
+    private void pedido3(){
+        req.send("3");
+        String res = req.recvStr();
+        System.out.println("Número de dispositivos ativos no sistema: " + res);
     }
 
     private void controlerN() {
@@ -155,14 +184,16 @@ public class Client {
 
             switch (command) {
                 case 1:
-                    sub1(command);
+                    command1(command);
                     break;
                 case 2:
-                    sub2(command);
+                    command2(command);
                     break;
                 case 3:
+                    command34(command);
                     break;
                 case 4:
+                    command34(command);
                     break;
                 case 0:
                     controler();
@@ -179,14 +210,20 @@ public class Client {
 
         while (on) {
             View.printMenuPedidos();
-            command = lerInt(0, 2);
+            command = lerInt(0, 4);
 
             switch (command) {
                 case 1:
-                    System.out.println("pedido 1");
+                    pedido14(command);
                     break;
                 case 2:
-                    System.out.println("pedido 2");;
+                    pedido2();
+                    break;
+                case 3:
+                    pedido3();
+                    break;
+                case 4:
+                    pedido14(command);
                     break;
                 case 0:
                     controler();
@@ -214,7 +251,6 @@ public class Client {
                     break;
                 case 0:
                     on=false;
-                    s.close();
                     break;
                 default:
                     break;
@@ -222,15 +258,24 @@ public class Client {
         }
     }
 
+    private void run() {
+        Thread t_sub = new Thread(new Subscriber(sub));
+        t_sub.start();
+        
+        controler();
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try(ZContext context = new ZContext();
-            ZMQ.Socket sub = context.createSocket(SocketType.SUB)) {
-            sub.connect("tcp://localhost:" + args[0]);
+            ZMQ.Socket sub = context.createSocket(SocketType.SUB);
+            ZMQ.Socket req = context.createSocket(SocketType.REQ)) {
 
-            Thread reader = new Thread(new ClientReader(sub));
-            reader.start();
+            int port_sub = Integer.parseInt(args[0]);
+            int port_req = port_sub + 1;
+            sub.connect("tcp://localhost:" + port_sub);
+            req.connect("tcp://localhost:" + port_req);
 
-            (new Client(sub)).controler();
+            (new Client(sub,req)).run();
         }
     }
 }
