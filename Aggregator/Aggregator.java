@@ -38,7 +38,6 @@ public class Aggregator {
     }
 
     private void sendMessage(String msg) {
-        crdt.incVersion();
         for(Integer i : this.neighbours){
             pushAggregator.send(msg);
         }
@@ -124,7 +123,6 @@ public class Aggregator {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
             if(changed) {
-                crdt.incVersion();
                 for(Integer i : neighbours){
                     pushAggregator.send(crdt.serializeState());
                 }
