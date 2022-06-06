@@ -8,9 +8,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -56,7 +53,7 @@ public class Aggregator {
                 this.crdt.putDevice(this.port, args[1], d);
             }
 
-            sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
+            // sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
 
             String record = crdt.validateRecord(args[2]);
             if(record!=null) {
@@ -67,6 +64,11 @@ public class Aggregator {
             if(record_total!=null) {
                 pub.send(record_total);
             }
+
+            String percent = crdt.validatePercentage();
+            if(percent!=null) {
+                pub.send(percent);
+            }
         } else if(args[0].equals("logout")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.setOnline(false);
@@ -75,11 +77,16 @@ public class Aggregator {
 
             this.crdt.putDevice(this.port, args[1], d);
 
-            sendMessage(crdt.serializeMessage(args[1], "offline", type));
+            // sendMessage(crdt.serializeMessage(args[1], "offline", type));
 
             String offline = crdt.validateOffline(type);
             if(offline!=null) {
                 pub.send(offline);
+            }
+
+            String percent = crdt.validatePercentage();
+            if(percent!=null) {
+                pub.send(percent);
             }
         } else if(args[0].equals("event")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
@@ -87,8 +94,9 @@ public class Aggregator {
 
             if(!d.isActive()){
                 String type = d.getType();
-                sendMessage(crdt.serializeMessage(args[1], "active", type));
                 d.setActive(true);
+
+                //sendMessage(crdt.serializeMessage(args[1], "active", type));
             }
         
             this.crdt.putDevice(this.port, args[1], d);
@@ -96,7 +104,8 @@ public class Aggregator {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.setActive(false);
             String type = d.getType();
-            sendMessage(crdt.serializeMessage(args[1], "inactive", type));
+            
+            //sendMessage(crdt.serializeMessage(args[1], "inactive", type));
 
             this.crdt.putDevice(this.port, args[1], d);
         }
@@ -107,8 +116,9 @@ public class Aggregator {
         Thread t_rep = new Thread(new Reply(rep, crdt));
         t_rep.start();
 
+        /*
         // PULL dos agregadores e PUSH para os agregadores
-        Thread t_spread = new Thread(new Spread(this.receiver, this.neighbours, this.crdt));
+        Thread t_spread = new Thread(new Spread(this.pub, this.receiver, this.neighbours, this.crdt));
         t_spread.start();
 
         // Scheduler x em x tempo fazer PUSH para os agregadores
@@ -119,6 +129,7 @@ public class Aggregator {
             }
 
         }, 15, 15, TimeUnit.SECONDS);
+         */
 
         // PULL do coletor e PUB para os clientes
         while (true) {
@@ -176,6 +187,7 @@ public class Aggregator {
             }
             
             (new Aggregator(pull, pub, rep, receiver, neighbours, nei, port_pull)).run();
+            
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

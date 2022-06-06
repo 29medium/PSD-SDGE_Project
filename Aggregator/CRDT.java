@@ -9,6 +9,7 @@ public class CRDT {
     private Map<String,Integer> record;
     private Map<Integer,Integer> versions;
     int record_total;
+    int percentage_online;
     int own_port;
 
     // versão atual
@@ -17,6 +18,7 @@ public class CRDT {
     public CRDT(Set<String> neighbours, int own_port){
         this.devices = new HashMap<>();
         this.record = new HashMap<>();
+        this.versions = new HashMap<>();
         this.version = 0;
         
         for(String s : neighbours) {
@@ -28,6 +30,7 @@ public class CRDT {
         this.devices.put(own_port, new HashMap<>());
 
         this.record_total = 0;
+        this.percentage_online = 0;
         this.own_port = own_port;
     }
 
@@ -57,7 +60,7 @@ public class CRDT {
 
 
     public String validateOffline(String type) {
-        int online = (int) this.devices.get(this.own_port).values().stream().filter(x -> x.getType().equals(type) && x.getOnline()).count();
+        int online = (int) this.devices.get(this.own_port).values().stream().filter(x -> x.getType().equals(type) && x.isOnline()).count();
         if(online == 0) {
             return "offline-" + type;
         }
@@ -87,6 +90,24 @@ public class CRDT {
         }
 
         return null;
+    }
+
+    public String validatePercentage() {
+        int zone_online = (int) devices.get(own_port).values().stream().filter(x -> x.isOnline()).count();
+        int total_online = devices.values().stream().map(x -> (int) x.values().stream().filter(y -> y.isOnline()).count()).mapToInt(Integer::intValue).sum();
+        int new_percentage = zone_online / total_online * 100;
+
+        String res = null;
+
+        if(new_percentage/10 > percentage_online/10) {
+            res = "percentUp-" + new_percentage/10 + "0";
+        } else if(new_percentage/10 > percentage_online/10) {
+            res = "percentDown-" + new_percentage/10 + "0";
+        }
+
+        percentage_online = new_percentage;
+
+        return res;
     }
 
     public String devicesOnline(String type) {

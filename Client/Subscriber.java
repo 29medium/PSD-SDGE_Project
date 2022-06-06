@@ -14,7 +14,7 @@ public class Subscriber implements Runnable{
 
         while(true) {
             byte[] msg = this.sub.recv();
-            System.out.println(new String(msg));
+            System.out.println("\nNotificação: " + new String(msg));
         }
     }
 }

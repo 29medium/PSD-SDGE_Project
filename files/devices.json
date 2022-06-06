@@ -1,5 +1,0 @@
-{
-    "car" : ["accelerate", "brake", "hand-brake on", "hand-brake off", "turn-left", "turn-right"],
-    "light" : ["on", "off"],
-    "drone" : ["up", "down"]
-}

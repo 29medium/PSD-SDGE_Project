@@ -3,10 +3,18 @@ import socket
 import sys
 import time
 import random
-import json
 
-file = open("files/devices.json")
-dic = json.load(file)
+
+with open("files/devices") as f:
+    lines = f.readlines()
+
+dic = dict()
+
+for line in lines:
+    device = line.split(":")
+    events = device[1].split(",")
+
+    dic[device[0]] = events
 
 class Device:
     def __init__(self,host,port):
@@ -34,12 +42,9 @@ def main():
 
     if len(args)==1 and args[0]=="-h":
         print("python3 device.py ID PASSWD TYPE IP PORT")
-    elif len(args)==5:
-        #HOST = args[3]
-        #PORT = int(args[4])
-
-        HOST = "localhost" # test only
-        PORT = 1234        # test only
+    elif len(args)==4:
+        HOST = "localhost"
+        PORT = int(args[3])
 
         if(args[2] in dic):
             device = Device(HOST,PORT)

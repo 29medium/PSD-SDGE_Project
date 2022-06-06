@@ -8,29 +8,23 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class Notification {
-    private List<String> types;
-    private List<String> events;
+    private Map<String, List<String>> types;
     private Map<String, Boolean> not1;
     private Map<String, Boolean> not2;
     private boolean not2All;
     private Set<Integer> not3;
     private Set<Integer> not4;
 
-    public Notification() {
-        types = new ArrayList<>();
-        types.add("car");
-        types.add("light");
-        types.add("drone");
+    public Notification(Map<String, List<String>> types) {
+        this.types = types;
 
         not1 = new HashMap<>();
-        not1.put("car", false);
-        not1.put("light", false);
-        not1.put("drone", false);
-
         not2 = new HashMap<>();
-        not2.put("car", false);
-        not2.put("light", false);
-        not2.put("drone", false);
+
+        for(String t : types.keySet()) {
+            not1.put(t, false);
+            not2.put(t, false);
+        }
 
         not2All = false;
 
@@ -42,10 +36,10 @@ public class Notification {
         List<String> res = new ArrayList<>();
 
         if (noti == 1) {
-            for (String s : types)
+            for (String s : types.keySet())
                 res.add(s+" "+not1.get(s));
         } else {
-            for (String s : types)
+            for (String s : types.keySet())
                 res.add(s+" "+not2.get(s));
         }
         return res;
@@ -93,7 +87,7 @@ public class Notification {
     }
 
     public void setNot2All() {
-        for (String s : types)
+        for (String s : types.keySet())
             if (!not2.get(s))
                 not2.put(s, true);
     }
@@ -148,19 +142,31 @@ public class Notification {
     }
 
     public String getType(int id) {
-        return types.get(id);
+        return (new ArrayList<>(types.keySet())).get(id);
     }
 
     public String getEvent(int id) {
+        List<String> events = new ArrayList<>();
+
+        for(List<String> e : types.values()) {
+            events.addAll(e);
+        }
+
         return events.get(id);
     }
 
     public List<String> getTypes() {
-        return new ArrayList<>(types);
+        return new ArrayList<>(types.keySet());
     }
 
     public List<String> getEvents() {
-        return new ArrayList<>(events);
+        List<String> events = new ArrayList<>();
+
+        for(List<String> e : types.values()) {
+            events.addAll(e);
+        }
+
+        return events;
     }
 
     public boolean isNot2All() {
@@ -170,6 +176,4 @@ public class Notification {
     public void setNot2All(boolean not2All) {
         this.not2All = not2All;
     }
-
-
 }

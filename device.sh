@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 Device/device.py user1 1234 car IP PORT
+python3 Device/device.py user1 1234 car "$@"
