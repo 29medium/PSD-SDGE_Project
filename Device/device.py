@@ -1,6 +1,8 @@
 from fileinput import close
 import socket
 import sys
+from threading import Thread
+import threading
 import time
 import random
 
@@ -9,6 +11,7 @@ with open("files/devices") as f:
     lines = f.readlines()
 
 dic = dict()
+devices = list()
 
 for line in lines:
     device = line.split(":")
@@ -16,10 +19,14 @@ for line in lines:
 
     dic[device[0]] = events
 
-class Device:
-    def __init__(self,host,port):
+class Device(Thread):
+    def __init__(self,host,port,id,passwd,type):
+        Thread.__init__(self)
         self.host = host
         self.port = port
+        self.id = id
+        self.passwd = passwd
+        self.type = type
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
     def sig_int_handler(self,signal,frame):
@@ -37,44 +44,52 @@ class Device:
     def close(self):
         self.socket.close()
 
+    def run(self):
+        self.connect()
+
+        msg = "login " + self.id + " " + self.passwd + " " + self.type + "\n"
+        try:
+            self.send(msg)
+
+            resp = self.recv(1024)
+            if "success" in resp.lower():
+                print("success!!!")
+            
+                while(True):
+                    sleep = random.uniform(1,2)
+                    time.sleep(sleep)
+                    event = random.choice(dic[self.type])
+                    msg = "event " + event + "\n"
+                    self.send(msg)
+            else:
+                print("Login failed")
+        finally:
+            print("closed!!!")
+            self.close()
+    
+    def join(self):
+        threading.Thread.join(self)
+
 def main():
     args = sys.argv[1:]
 
     if len(args)==1 and args[0]=="-h":
-        print("python3 device.py ID PASSWD TYPE IP PORT")
-    elif len(args)==4:
+        print("python3 device.py PORT")
+    elif len(args)==2:
         HOST = "localhost"
-        PORT = int(args[3])
+        port = int(args[0])
 
-        if(args[2] in dic):
-            device = Device(HOST,PORT)
-            device.connect()
-            
-            msg = "login " + args[0] + " " + args[1] + " " + args[2] + "\n"
-            try:
-                device.send(msg)
+        max = int(args[1])+1
+        for i in range(1, max):
+            id = "user" + str(i)
+            passwd = "passwd" + str(i)
+            type = random.choice(list(dic.keys()))
 
-                resp = device.recv(1024)
-                if "success" in resp.lower():
-                    print("success!!!")
-                else:
-                    print(resp)
+            device = Device(HOST,port,id,passwd,type)
+            device.start()
 
-                if resp :
-                    while(True):
-                        time.sleep(2)
-                        event = random.choice(dic[args[2]])
-                        msg = "event " + event + "\n"
-                        device.send(msg)
-                else:
-                    print("Login failed")
-            finally:
-                device.close()
-    
-        else:
-            print("Wrong type")
+            time.sleep(0.1)
     else:
         print("Wrong arguments")
-
 
 main()    

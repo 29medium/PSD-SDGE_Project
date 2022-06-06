@@ -2,39 +2,42 @@ package Aggregator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 public class Aggregator {
     private ZMQ.Socket pull;
     private ZMQ.Socket pub;
     private ZMQ.Socket rep;
-    private ZMQ.Socket receiver;
-    private Map<Integer,ZMQ.Socket> neighbours;
+    private ZMQ.Socket pullAggregator;
+    private ZMQ.Socket pushAggregator;
+    private Set<Integer> neighbours;
     private int port;
     private CRDT crdt;
 
-    public Aggregator(ZMQ.Socket pull, ZMQ.Socket pub, ZMQ.Socket rep, ZMQ.Socket receiver, Map<Integer,ZMQ.Socket> neighbours, Set<String> nei, int port) {
+    public Aggregator(ZMQ.Socket pull, ZMQ.Socket pub, ZMQ.Socket rep, ZMQ.Socket pullAggregator, ZMQ.Socket pushAggregator, Set<Integer> neighbours, int port) {
         this.pull = pull;
         this.pub = pub;
         this.rep = rep;
-        this.receiver = receiver;
+        this.pullAggregator = pullAggregator;
+        this.pushAggregator = pushAggregator;
         this.neighbours = neighbours;
         this.port = port;
-        this.crdt = new CRDT(nei, port);
+        this.crdt = new CRDT(neighbours, port);
     }
 
     private void sendMessage(String msg) {
-        for(ZMQ.Socket push : this.neighbours.values()){
-            push.send(msg);
+        for(Integer i : this.neighbours){
+            pushAggregator.send(msg);
         }
     }
 
@@ -46,14 +49,14 @@ public class Aggregator {
                 Device d = this.crdt.getDevice(this.port, args[1]);
                 d.setOnline(true);
                 d.setActive(true);
-                
-                this.crdt.putDevice(this.port, args[1], d);
+                crdt.incVersion();
             } else {
                 Device d = new Device(args[1], args[2], true, true);
                 this.crdt.putDevice(this.port, args[1], d);
+                crdt.incVersion();
             }
 
-            // sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
+            sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
 
             String record = crdt.validateRecord(args[2]);
             if(record!=null) {
@@ -74,10 +77,9 @@ public class Aggregator {
             d.setOnline(false);
             d.setActive(false);
             String type = d.getType();
+            crdt.incVersion();
 
-            this.crdt.putDevice(this.port, args[1], d);
-
-            // sendMessage(crdt.serializeMessage(args[1], "offline", type));
+            sendMessage(crdt.serializeMessage(args[1], "offline", type));
 
             String offline = crdt.validateOffline(type);
             if(offline!=null) {
@@ -91,23 +93,21 @@ public class Aggregator {
         } else if(args[0].equals("event")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.addEvent(args[2]);
+            crdt.incVersion();
 
             if(!d.isActive()){
                 String type = d.getType();
                 d.setActive(true);
 
-                //sendMessage(crdt.serializeMessage(args[1], "active", type));
+                sendMessage(crdt.serializeMessage(args[1], "active", type));
             }
-        
-            this.crdt.putDevice(this.port, args[1], d);
         } else if(args[0].equals("inactive")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.setActive(false);
             String type = d.getType();
+            crdt.incVersion();
             
-            //sendMessage(crdt.serializeMessage(args[1], "inactive", type));
-
-            this.crdt.putDevice(this.port, args[1], d);
+            sendMessage(crdt.serializeMessage(args[1], "inactive", type));
         }
     }
 
@@ -116,20 +116,19 @@ public class Aggregator {
         Thread t_rep = new Thread(new Reply(rep, crdt));
         t_rep.start();
 
-        /*
         // PULL dos agregadores e PUSH para os agregadores
-        Thread t_spread = new Thread(new Spread(this.pub, this.receiver, this.neighbours, this.crdt));
+        Thread t_spread = new Thread(new Spread(pub, pullAggregator, pushAggregator, neighbours, crdt));
         t_spread.start();
 
         // Scheduler x em x tempo fazer PUSH para os agregadores
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
-            for(ZMQ.Socket push : this.neighbours.values()){
-                push.send(crdt.serializeState());
+            for(Integer i : neighbours){
+                pushAggregator.send(crdt.serializeState());
             }
 
         }, 15, 15, TimeUnit.SECONDS);
-         */
+
 
         // PULL do coletor e PUB para os clientes
         while (true) {
@@ -138,16 +137,19 @@ public class Aggregator {
         }
     }
 
-    public static Set<String> parseNeighbours(String path, int port) throws FileNotFoundException {
+    public static Set<Integer> parseNeighbours(String path, int port) throws FileNotFoundException {
         File f = new File(path);
         Scanner s = new Scanner(f);
         String[] tokens;
-        Set<String> res = null;
+        Set<Integer> res = new TreeSet<>();
 
         while(s.hasNextLine()) {
             tokens = s.nextLine().split(":");
             if(Integer.parseInt(tokens[0]) == (port)) {
-                res = new TreeSet<>( Arrays.asList(tokens[1].split(",")) );
+                String[] args = (tokens[1].split(","));
+                for(String str : args) {
+                    res.add(Integer.parseInt(str));
+                }
             }
         }
 
@@ -162,7 +164,8 @@ public class Aggregator {
             ZMQ.Socket pull = context.createSocket(SocketType.PULL);
             ZMQ.Socket pub = context.createSocket(SocketType.PUB);
             ZMQ.Socket rep = context.createSocket(SocketType.REP);
-            ZMQ.Socket receiver = context.createSocket(SocketType.PULL))
+            ZMQ.Socket pushAggregator = context.createSocket(SocketType.PUSH);
+            ZMQ.Socket pullAggreagtor = context.createSocket(SocketType.PULL))
         {
             int port_pull = Integer.parseInt(args[0]);
             int port_pub = port_pull + 1;
@@ -172,24 +175,19 @@ public class Aggregator {
             pull.bind("tcp://localhost:" + port_pull);
             pub.bind("tcp://localhost:" + port_pub);
             rep.bind("tcp://localhost:" + port_rep);
-            receiver.bind("tcp://localhost:" + port_receiver);
+            pullAggreagtor.bind("tcp://localhost:" + port_receiver);
 
-            Set<String> nei = parseNeighbours("files/topology", port_pull);
+            Set<Integer> neighbours = parseNeighbours("files/topology", port_pull);
 
-            Map<Integer, ZMQ.Socket> neighbours = new HashMap<>();
-            for(String s : nei) {
-                try(ZMQ.Socket push = context.createSocket(SocketType.PUSH)) {
-                    int port_push = Integer.parseInt(s);
-                    int port_connect = port_push + 3;
-                    push.connect("tcp://localhost:" + port_connect);
-                    neighbours.put(port_push, push);
-                }
+            for(Integer p : neighbours) {
+                int port_connect = p + 3;
+                pushAggregator.connect("tcp://localhost:" + port_connect);
             }
             
-            (new Aggregator(pull, pub, rep, receiver, neighbours, nei, port_pull)).run();
+            (new Aggregator(pull, pub, rep, pullAggreagtor, pushAggregator, neighbours, port_pull)).run();
             
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+            System.out.println("Ficheiro de topoligia não encontrado");
+        }  catch ( ZMQException ignored ) {}
     }
 }

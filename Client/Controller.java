@@ -1,5 +1,6 @@
 package Client;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -42,7 +43,7 @@ public class Controller {
         return n;
     }
 
-    private void command1(int command){
+    private void notification1(int command){
         int op;
         String type;
         boolean state;
@@ -57,10 +58,11 @@ public class Controller {
                 this.sub.subscribe("offline-"+type);
             else
                 this.sub.unsubscribe("offline-"+type);
+            notification1(command);
         }
     }
 
-    private void command2(int command){
+    private void notification2(int command){
         int op;
         String type;
         boolean state;
@@ -80,7 +82,7 @@ public class Controller {
                 this.sub.subscribe("record-");
                 notification.setNot2All(true);
             }
-            
+            notification2(command);
         }else if (op > 0) {
             type = notification.getType(op - 1);
             state = notification.setOpposite(command, type);
@@ -88,34 +90,44 @@ public class Controller {
                 this.sub.subscribe("record-"+type);
             else
                 this.sub.unsubscribe("record-"+type);
+            notification2(command);
         }
     }
 
-    private void command34(int command){
+    private void notification34(int command){
         int op,value;
-        List<String> values = notification.getXs(command);
+        List<String> values = notification.getXUsedList(command);
         values.add("Adiconar X%");
         View.printMenu(values, "Notificações (X%)");
         op = lerInt(0, values.size());
 
-        if(op == values.size()){
-            value = lerInt(0, 100);
-            if(!notification.containsX(command, value)){
-                notification.setX(command, value);
-                if(command == 3)
-                    this.sub.subscribe("percentUp-"+value);
-                else
-                    this.sub.subscribe("percentDown-"+value);
+        if(op >0) {
+            if(op == values.size()){
+                values = notification.getXUnusedList(command);
+                int size = values.size();
+                View.printMenu(values, "Escolher % (X%)");
+                op = lerInt(0, size);
+                if(op > 0) {
+                    value = Integer.valueOf(values.get(op-1));
+                    if(!notification.containsX(command, value)){
+                        notification.setX(command, value);
+                        if(command == 3)
+                            this.sub.subscribe("percentUp-"+value);
+                        else
+                            this.sub.subscribe("percentDown-"+value);
+                    }
+                }
+            }else {
+                value = notification.getX(command,op-1);
+                if(notification.containsX(command, value)){
+                    notification.removeX(command, value);
+                    if(command == 3)
+                        this.sub.unsubscribe("percentUp-"+value);
+                    else
+                        this.sub.unsubscribe("percentDown-"+value);
+                }
             }
-        }else {
-            value = notification.getX(command,op-1);
-            if(notification.containsX(command, value)){
-                notification.removeX(command, value);
-                if(command == 3)
-                    this.sub.unsubscribe("percentUp-"+value);
-                else
-                    this.sub.unsubscribe("percentDown-"+value);
-            }
+            notification34(command);
         }
     }
 
@@ -162,59 +174,45 @@ public class Controller {
         System.out.println("Número de dispositivos ativos no sistema: " + res);
     }
 
-    private void controllerNotifications() {
+    private void controller2(int type) {
         int command;
         boolean on = true;
 
         while (on) {
-            View.printMenuNotificacoes();
+            if(type == 2)
+                View.printMenuPedidos();
+            else
+                View.printMenuNotificacoes();
+                
             command = lerInt(0, 4);
 
             switch (command) {
                 case 1:
-                    command1(command);
+                    if(type == 2)
+                        pedido14(command);
+                    else
+                        notification1(command);
                     break;
                 case 2:
-                    command2(command);
+                    if(type == 2)
+                        pedido2();
+                    else
+                        notification2(command);
                     break;
                 case 3:
-                    command34(command);
+                    if(type == 2)
+                        pedido3();
+                    else
+                        notification34(command);
                     break;
                 case 4:
-                    command34(command);
+                    if(type == 2)
+                        pedido14(command);
+                    else
+                        notification34(command);
                     break;
                 case 0:
-                    controller();
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private void controllerQueries() {
-        int command;
-        boolean on = true;
-
-        while (on) {
-            View.printMenuPedidos();
-            command = lerInt(0, 4);
-
-            switch (command) {
-                case 1:
-                    pedido14(command);
-                    break;
-                case 2:
-                    pedido2();
-                    break;
-                case 3:
-                    pedido3();
-                    break;
-                case 4:
-                    pedido14(command);
-                    break;
-                case 0:
-                    controller();
+                    on = false;
                     break;
                 default:
                     break;
@@ -232,10 +230,10 @@ public class Controller {
 
             switch (command) {
                 case 1:
-                    controllerNotifications();
+                    controller2(command);
                     break;
                 case 2:
-                    controllerQueries();
+                    controller2(command);
                     break;
                 case 0:
                     on=false;

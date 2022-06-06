@@ -52,7 +52,7 @@ public class Notification {
             return not2.get(getType(id));
     }
 
-    public List<String> getXs(int noti) {
+    public List<String> getXUsedList(int noti) {
         Set<Integer> l;
         if (noti == 3) 
             l = not3;
@@ -65,6 +65,24 @@ public class Notification {
             res.add("Desativar " + i + "%");
 
         return res;
+    }
+
+    public List<String> getXUnusedList(int command){
+        Set<Integer> l;
+        List<String> values = new ArrayList<>();
+        values.add("10");values.add("20");values.add("30");
+        values.add("40");values.add("50");values.add("60");
+        values.add("70");values.add("80");values.add("90");
+
+        if(command == 3)
+            l = not3;
+        else
+            l = not4;
+
+        for (Integer i : l) 
+            values.remove(""+i);
+
+        return values;
     }
 
     public int getX(int command,int index){
@@ -84,26 +102,6 @@ public class Notification {
         }
 
         return res;
-    }
-
-    public void setNot2All() {
-        for (String s : types.keySet())
-            if (!not2.get(s))
-                not2.put(s, true);
-    }
-
-    public void setActive(int noti, String id) {
-        if (noti == 1)
-            not1.put(id, true);
-        else
-            not2.put(id, true);
-    }
-
-    public void setInnactive(int noti, String id) {
-        if (noti == 1)
-            not1.put(id, false);
-        else
-            not2.put(id, false);
     }
 
     public boolean setOpposite(int noti, String type) {

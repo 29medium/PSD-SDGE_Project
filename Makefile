@@ -1,4 +1,4 @@
-build: coletor java
+build: clean coletor java
 
 coletor:
 	erlc -o Colector/ Colector/tcpHandler.erl Colector/loginManager.erl

@@ -1,8 +1,8 @@
 -module(loginManager).
--export([run/0, create_account/2, close_account/2, login/2, logout/1, user_pid/1]).
+-export([run/0, create_account/2, close_account/2, login/2, logout/1]).
 
 run() -> 
-	register(?MODULE, spawn ( fun() -> loginManager(#{"user1"=>{"1234",false}}) end) ).
+	register(?MODULE, spawn ( fun() -> loginManager(#{}) end) ).
 
 create_account(User, Pass) ->
 	?MODULE ! {create_account, User, Pass, self()},
@@ -18,11 +18,6 @@ login(User, Pass) ->
 
 logout(User) ->
 	?MODULE ! {logout, User, self()},
-	receiveReply().
-
-% Replys error | disconnected | {ok, Pid} 
-user_pid(User) ->
-	?MODULE ! {user_pid, User, self()},
 	receiveReply().
 
 loginManager(Map) ->
@@ -52,27 +47,22 @@ loginManager(Map) ->
       		case maps:find(User, Map) of
         		{ok, {Pass, false}} ->
           			From ! {?MODULE, logged, User,Type},
-          			loginManager(maps:update(User, {Pass, From}, Map));
+          			loginManager(maps:update(User, {Pass, true}, Map));
+				{ok, {Pass, true}} ->
+					From ! {?MODULE,alreadyOnline},
+					loginManager(Map);
         		_ -> 
-          			From ! {?MODULE, invalid},
-          			loginManager(Map)
+          			From ! {?MODULE, logged,User,Type},
+					io:format("New user ~p\n", [User]),
+          			loginManager(maps:put(User, {Pass, true}, Map))
+					%From ! {?MODULE, invalid},
+          			%loginManager(Map)
       		end;
 
     	{logout, User, From} -> 
       		From ! {?MODULE, ok},
       		{Pass, _} = maps:get(User, Map),
-      		loginManager(maps:update(User, {Pass, false}, Map));
-
-		{user_pid, User, From} ->
-			case maps:find(User, Map) of
-				{ok, {_, false}} ->
-					From ! {?MODULE, disconnected};
-				{ok, {_, Pid}} ->
-					From ! {?MODULE, {ok, Pid}};
-				_ ->
-					From ! {?MODULE, error}
-			end,
-			loginManager(Map)
+      		loginManager(maps:update(User, {Pass, false}, Map))
     end.
 
 receiveReply() ->

@@ -60,7 +60,7 @@ public class Client {
             (new Client(sub,req,types)).run();
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("Ficheiro de dispositivos não encontrado");
         }
     }
 }

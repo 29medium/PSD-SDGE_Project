@@ -1,6 +1,7 @@
 package Client;
 
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 public class Subscriber implements Runnable{
     private ZMQ.Socket sub;
@@ -11,10 +12,11 @@ public class Subscriber implements Runnable{
 
     @Override
     public void run() {
-
-        while(true) {
-            byte[] msg = this.sub.recv();
-            System.out.println("\nNotificação: " + new String(msg));
-        }
+        try {
+                while(true) {
+                byte[] msg = this.sub.recv();
+                System.out.println("\nNotificação: " + new String(msg));
+            }   
+        } catch (ZMQException ignore) {}
     }
 }

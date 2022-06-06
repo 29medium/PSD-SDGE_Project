@@ -84,11 +84,11 @@ public class Device {
           .append(":");
 
         for(Map.Entry<String, Integer> e : this.events.entrySet()) {
-            sb.append(e.getKey()).append("_").append(String.valueOf(e.getValue())).append("<");
+            sb.append(e.getKey()).append("%").append(String.valueOf(e.getValue())).append("!");
         }
 
         String s = sb.toString();
-        return s.substring(1, s.length() - 1);
+        return s.substring(0, s.length() - 1);
     }
 
     private void deserialize(String serialized){
@@ -103,9 +103,11 @@ public class Device {
         this.active = Boolean.parseBoolean(args[3]);
 
         this.events = new HashMap<>();
-        String[] tokens = args[4].split("<");
+        String[] tokens = args[4].split("!");
         for(String t : tokens) {
-            String[] entry = t.split("_");
+            // debug
+            System.out.println("here: " + t);
+            String[] entry = t.split("%");
             this.events.put(entry[0],Integer.parseInt(entry[1]));
         }
     }

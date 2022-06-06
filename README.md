@@ -32,3 +32,14 @@
 4. a percentagem de dispositivos online na zona face ao total online desceu, tendo ficado em menos de X% dos dispositivos online, para X ∈ {10, 20, . . . , 90}.
     * Sub: 'percentDown-'**PERCENT**
     * Pub: 'percentDown-'**PERCENT**
+
+
+### Separação
+**Separação:**
+version, source, state/msg , user~Device
+Device -> user:type:online:active:Event
+Event -> event%numeroOcorrencia ! Event
+Event -> 
+
+**exemplo:**
+5,1201,state,user1~user1:car:true:false:brake%2!turn-left%1!hand-brake-ok%4!accelerate%2!hand-brake-off%3!turn-right%1

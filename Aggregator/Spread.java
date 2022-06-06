@@ -1,35 +1,37 @@
 package Aggregator;
 
-import java.util.Map;
+import java.util.Set;
 
 import org.zeromq.ZMQ;
 
 public class Spread implements Runnable {
     private ZMQ.Socket pub;
-    private ZMQ.Socket receiver;
-    private Map<Integer,ZMQ.Socket> neighbours;
+    private ZMQ.Socket pullAggregator;
+    private ZMQ.Socket pushAggregator;
+    private Set<Integer> neighbours;
     private CRDT crdt;
     
-    public Spread(ZMQ.Socket pub,ZMQ.Socket receiver, Map<Integer,ZMQ.Socket> neighbours, CRDT crdt) {
+    public Spread(ZMQ.Socket pub, ZMQ.Socket pullAggregator,ZMQ.Socket pushAggregator, Set<Integer> neighbours, CRDT crdt) {
         this.pub = pub;
-        this.receiver = receiver;
+        this.pullAggregator = pullAggregator;
+        this.pushAggregator = pushAggregator;
         this.neighbours = neighbours;
         this.crdt = crdt;
     }
 
     public void run() {
         while(true) {
-            byte[] msg = receiver.recv();
+            byte[] msg = pullAggregator.recv();
 
-            crdt.deserialize(new String(msg));
+            if(crdt.deserialize(new String(msg))) {
+                for(Integer i : neighbours) {
+                    pushAggregator.send(msg);
+                }
+            }
 
             String percent = crdt.validatePercentage();
             if(percent!=null) {
                 pub.send(percent);
-            }
-
-            for(ZMQ.Socket push : neighbours.values()) {
-                push.send(msg);
             }
         }
     }
