@@ -11,6 +11,7 @@ public class View {
         System.out.println("");
     }
 
+    // print menu with the title message and the given list of strings
     public static void printMenu(List<String> menu, String message){
 
         int size = 0, length=message.length();
@@ -34,23 +35,23 @@ public class View {
         System.out.println("0 | Sair");
     }
 
-    public static void printMenuNotificacoes() {
+    public static void printNotificationsMenu() {
         List<String> l = new ArrayList<>();
-        l.add( "Notificações 'Sem Dispositivos Online'");
+        l.add("Notificações 'Sem Dispositivos Online'");
         l.add("Notificações 'Record de Dispositivos Online'");
-        l.add( "Notificações 'Subida de Dispositivos Online");
+        l.add("Notificações 'Subida de Dispositivos Online");
         l.add("Notificações 'Descida de Dispositivos Online");
         printMenu(l,"NOTIFICAÇÕES");
     }
 
-    public static void printMenuPrincipal(){
+    public static void printMainMenu(){
         List<String> l = new ArrayList<>();
         l.add("Notificações");
         l.add("Pedidos");
         printMenu(l,"MENU");
     }
 
-    public static void printMenuPedidos(){
+    public static void printRequestsMenu(){
         List<String> l = new ArrayList<>();
         l.add("Número de dispositivos de um dado tipo online no sistema");
         l.add("Verificar se um dispositivo está online no sistema");

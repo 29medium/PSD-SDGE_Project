@@ -11,15 +11,15 @@ public class CRDT {
     int record_total;
     int percentage_online;
     int own_port;
-
-    // versão atual
     int version;
+    int latest_sent;
     
     public CRDT(Set<Integer> neighbours, int own_port){
         this.devices = new HashMap<>();
         this.record = new HashMap<>();
         this.versions = new HashMap<>();
         this.version = 0;
+        this.latest_sent = 0;
         
         for(Integer port : neighbours) {
             this.devices.put(port, new HashMap<>());
@@ -32,7 +32,19 @@ public class CRDT {
         this.percentage_online = 0;
         this.own_port = own_port;
     }
+/* 
+    public int getVersion() {
+        return version;
+    }
 
+    public int getLatestSent() {
+        return latest_sent;
+    }
+
+    public void setLatestSent() {
+        latest_sent = version;
+    }
+*/
     public void incVersion() {
         this.version++;
     }
@@ -58,9 +70,9 @@ public class CRDT {
     }
 
     public void replaceDevices(int port, Map<String,Device> devices){
+        this.devices.remove(port);
         this.devices.put(port, devices);
     }
-
 
     public String validateOffline(String type) {
         int online = (int) this.devices.get(this.own_port).values().stream().filter(x -> x.getType().equals(type) && x.isOnline()).count();
@@ -151,7 +163,9 @@ public class CRDT {
         int count = 0;
 
         for(Map<String, Device> m : devices.values()){
-            count += m.values().stream().map(x -> x.getNumEvents(type)).mapToInt(Integer::intValue).sum();
+            for(Device e : m.values()) {
+                count += e.getNumEvents(type);
+            }
         }
 
         return String.valueOf(count);
@@ -185,13 +199,19 @@ public class CRDT {
     }
     
     public boolean deserialize(String s) {        
-        System.out.println(s);
-
         String []args = s.split(",");
         int ver = Integer.parseInt(args[0]);
         int source = Integer.parseInt(args[1]);
 
-        if (args.length != 4 || source==own_port || !this.versions.containsKey(source) || ver <= this.versions.get(source)) 
+        if(!versions.containsKey(source))
+            versions.put(source, 0);
+
+        System.out.println(s);
+        System.out.println();
+        System.out.println("Versions nova " + ver + "- versions velha " + this.versions.get(source));
+        System.out.println();
+
+        if (args.length != 4 || source==own_port || ver <= this.versions.get(source))
             return false;
 
         if(args[2].equals("state")){
@@ -202,7 +222,12 @@ public class CRDT {
                 String []devArgs = dev.split("~");
                 newState.put(devArgs[0],new Device(devArgs[1]));
             }
+
+            System.out.println("Troquei os maps");
+
+            replaceDevices(source, newState);
         }
+
         else if (args[2].equals("msg")){
             // chamar serialize msg
             String[] msg = args[3].split(";");

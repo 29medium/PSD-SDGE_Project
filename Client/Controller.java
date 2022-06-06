@@ -1,6 +1,5 @@
 package Client;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -8,9 +7,13 @@ import java.util.Scanner;
 import org.zeromq.ZMQ;
 
 public class Controller {
+    // classe that saves the state of active notifications
     private Notification notification;
+    // scanner to read input
     private Scanner s;
+    // socket request/reply
     private ZMQ.Socket req;
+    // socket publish/subscribe
     private ZMQ.Socket sub;
 
     public Controller(ZMQ.Socket req, ZMQ.Socket sub, Map<String, List<String>> types) {
@@ -20,6 +23,7 @@ public class Controller {
         this.sub = sub;
     }
 
+    // read int between min and max
     private int lerInt(int min, int max){
         int n = -1;
         String str;
@@ -27,7 +31,6 @@ public class Controller {
             str = "Insira uma opção:";
         else
             str = "Insira um valor de 0 a 100:";
-
 
         do{
             System.out.println(str);
@@ -43,6 +46,7 @@ public class Controller {
         return n;
     }
 
+    // notification1 state handler
     private void notification1(int command){
         int op;
         String type;
@@ -62,6 +66,7 @@ public class Controller {
         }
     }
 
+    // notification2 state handler
     private void notification2(int command){
         int op;
         String type;
@@ -94,6 +99,7 @@ public class Controller {
         }
     }
 
+    // notification 3 and 4 state handler
     private void notification34(int command){
         int op,value;
         List<String> values = notification.getXUsedList(command);
@@ -117,7 +123,7 @@ public class Controller {
                             this.sub.subscribe("percentDown-"+value);
                     }
                 }
-            }else {
+            } else {
                 value = notification.getX(command,op-1);
                 if(notification.containsX(command, value)){
                     notification.removeX(command, value);
@@ -131,7 +137,8 @@ public class Controller {
         }
     }
 
-    private void pedido14(int command){
+     // request 1 and 4 handler
+    private void request14(int command){
         int op;
         List<String> values;
         if(command == 1) 
@@ -157,7 +164,8 @@ public class Controller {
         }
     }
 
-    private void pedido2(){
+    // request 2 handler
+    private void request2(){
         System.out.println("Insira um ID de dispositivo:");
         String id = s.nextLine();
 
@@ -168,46 +176,48 @@ public class Controller {
             System.out.println("O dispositivo " + id + " não está online no sistema");
     }
 
-    private void pedido3(){
+    // request 3 handler
+    private void request3(){
         req.send("3");
         String res = req.recvStr();
         System.out.println("Número de dispositivos ativos no sistema: " + res);
     }
 
+    // controller for request and notifications
     private void controller2(int type) {
         int command;
         boolean on = true;
 
         while (on) {
             if(type == 2)
-                View.printMenuPedidos();
+                View.printRequestsMenu();
             else
-                View.printMenuNotificacoes();
+                View.printNotificationsMenu();
                 
             command = lerInt(0, 4);
 
             switch (command) {
                 case 1:
                     if(type == 2)
-                        pedido14(command);
+                        request14(command);
                     else
                         notification1(command);
                     break;
                 case 2:
                     if(type == 2)
-                        pedido2();
+                        request2();
                     else
                         notification2(command);
                     break;
                 case 3:
                     if(type == 2)
-                        pedido3();
+                        request3();
                     else
                         notification34(command);
                     break;
                 case 4:
                     if(type == 2)
-                        pedido14(command);
+                        request14(command);
                     else
                         notification34(command);
                     break;
@@ -220,12 +230,13 @@ public class Controller {
         }
     }
 
+    // main controller
     public void controller() {
         int command;
         boolean on = true;
 
         while (on) {
-            View.printMenuPrincipal();
+            View.printMainMenu();
             command = lerInt(0, 2);
 
             switch (command) {

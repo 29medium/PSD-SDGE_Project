@@ -23,6 +23,7 @@ public class Aggregator {
     private Set<Integer> neighbours;
     private int port;
     private CRDT crdt;
+    private boolean changed;
 
     public Aggregator(ZMQ.Socket pull, ZMQ.Socket pub, ZMQ.Socket rep, ZMQ.Socket pullAggregator, ZMQ.Socket pushAggregator, Set<Integer> neighbours, int port) {
         this.pull = pull;
@@ -33,9 +34,11 @@ public class Aggregator {
         this.neighbours = neighbours;
         this.port = port;
         this.crdt = new CRDT(neighbours, port);
+        this.changed = false;
     }
 
     private void sendMessage(String msg) {
+        crdt.incVersion();
         for(Integer i : this.neighbours){
             pushAggregator.send(msg);
         }
@@ -49,11 +52,9 @@ public class Aggregator {
                 Device d = this.crdt.getDevice(this.port, args[1]);
                 d.setOnline(true);
                 d.setActive(true);
-                crdt.incVersion();
             } else {
                 Device d = new Device(args[1], args[2], true, true);
                 this.crdt.putDevice(this.port, args[1], d);
-                crdt.incVersion();
             }
 
             sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
@@ -77,7 +78,6 @@ public class Aggregator {
             d.setOnline(false);
             d.setActive(false);
             String type = d.getType();
-            crdt.incVersion();
 
             sendMessage(crdt.serializeMessage(args[1], "offline", type));
 
@@ -93,7 +93,8 @@ public class Aggregator {
         } else if(args[0].equals("event")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.addEvent(args[2]);
-            crdt.incVersion();
+
+            changed = true;
 
             if(!d.isActive()){
                 String type = d.getType();
@@ -105,7 +106,6 @@ public class Aggregator {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.setActive(false);
             String type = d.getType();
-            crdt.incVersion();
             
             sendMessage(crdt.serializeMessage(args[1], "inactive", type));
         }
@@ -123,10 +123,13 @@ public class Aggregator {
         // Scheduler x em x tempo fazer PUSH para os agregadores
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
-            for(Integer i : neighbours){
-                pushAggregator.send(crdt.serializeState());
+            if(changed) {
+                crdt.incVersion();
+                for(Integer i : neighbours){
+                    pushAggregator.send(crdt.serializeState());
+                }
+                changed = false;
             }
-
         }, 15, 15, TimeUnit.SECONDS);
 
 

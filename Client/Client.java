@@ -31,6 +31,7 @@ public class Client {
         controller.controller();
     }
 
+    // parse types and events from a given file
     public static Map<String, List<String>> parseTypes(String path) throws FileNotFoundException {
         File f = new File(path);
         Scanner s = new Scanner(f);

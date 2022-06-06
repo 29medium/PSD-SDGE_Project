@@ -58,7 +58,7 @@ public class Device {
         if(events.containsKey(event)) {
             int counter = events.get(event);
             counter++;
-            events.put(event, counter);
+            events.replace(event, counter);
         } else {
             events.put(event, 1);
         }
@@ -105,8 +105,6 @@ public class Device {
         this.events = new HashMap<>();
         String[] tokens = args[4].split("!");
         for(String t : tokens) {
-            // debug
-            System.out.println("here: " + t);
             String[] entry = t.split("%");
             this.events.put(entry[0],Integer.parseInt(entry[1]));
         }

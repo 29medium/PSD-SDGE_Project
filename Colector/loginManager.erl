@@ -1,5 +1,5 @@
 -module(loginManager).
--export([run/0, create_account/2, close_account/2, login/2, logout/1]).
+-export([run/0, create_account/2, close_account/2, login/3, logout/1]).
 
 run() -> 
 	register(?MODULE, spawn ( fun() -> loginManager(#{}) end) ).
@@ -12,8 +12,8 @@ close_account(User, Pass) ->
 	?MODULE ! {close_account, User, Pass, self()},
 	receiveReply().
 
-login(User, Pass) ->
-	?MODULE ! {login, User, Pass, self()},
+login(User, Pass, Type) ->
+	?MODULE ! {login, User, Pass,Type, self()},
 	receiveReply().
 
 logout(User) ->
@@ -45,24 +45,37 @@ loginManager(Map) ->
 
     	{login, User, Pass, Type,From} ->
       		case maps:find(User, Map) of
+				% user e pass certos
         		{ok, {Pass, false}} ->
           			From ! {?MODULE, logged, User,Type},
-          			loginManager(maps:update(User, {Pass, true}, Map));
-				{ok, {Pass, true}} ->
+          			loginManager(maps:update(User, {Pass, From}, Map));
+				% Pass errada
+				{ok, {_, false}} ->
+					From ! {?MODULE,invalid},
+					loginManager(Map);
+
+				% User já loggado
+				{ok, {_,_}}->
 					From ! {?MODULE,alreadyOnline},
 					loginManager(Map);
+				% Não existe user -> cria um novo
         		_ -> 
-          			From ! {?MODULE, logged,User,Type},
 					io:format("New user ~p\n", [User]),
-          			loginManager(maps:put(User, {Pass, true}, Map))
+          			From ! {?MODULE, logged,User,Type},
+					loginManager(maps:put(User, {Pass, From}, Map))
 					%From ! {?MODULE, invalid},
           			%loginManager(Map)
       		end;
 
     	{logout, User, From} -> 
-      		From ! {?MODULE, ok},
-      		{Pass, _} = maps:get(User, Map),
-      		loginManager(maps:update(User, {Pass, false}, Map))
+			case maps:find(User,Map) of
+				{ok, {Pass,From}} ->
+					loginManager(maps:update(User, {Pass, false}, Map)),
+					From ! {?MODULE, ok};
+				_ -> 
+					io:format("Logout com user errado\n"),
+					loginManager(Map)
+			end
     end.
 
 receiveReply() ->

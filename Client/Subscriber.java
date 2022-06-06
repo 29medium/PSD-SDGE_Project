@@ -3,6 +3,7 @@ package Client;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
+// this class reads and print all subscribed info
 public class Subscriber implements Runnable{
     private ZMQ.Socket sub;
 
