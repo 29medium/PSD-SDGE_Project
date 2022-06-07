@@ -55,7 +55,7 @@ public class Aggregator {
                 Device d = new Device(args[1], args[2], true, true);
                 this.crdt.putDevice(this.port, args[1], d);
             }
-
+            this.crdt.incVersion();
             sendMessage(crdt.serializeMessage(args[1], "online", args[2]));
 
             String record = crdt.validateRecord(args[2]);
@@ -77,7 +77,7 @@ public class Aggregator {
             d.setOnline(false);
             d.setActive(false);
             String type = d.getType();
-
+            this.crdt.incVersion();
             sendMessage(crdt.serializeMessage(args[1], "offline", type));
 
             String offline = crdt.validateOffline(type);
@@ -98,7 +98,7 @@ public class Aggregator {
             if(!d.isActive()){
                 String type = d.getType();
                 d.setActive(true);
-
+                this.crdt.incVersion();
                 sendMessage(crdt.serializeMessage(args[1], "active", type));
             }
         } else if(args[0].equals("inactive")) {
@@ -106,6 +106,7 @@ public class Aggregator {
             d.setActive(false);
             String type = d.getType();
             
+            this.crdt.incVersion();
             sendMessage(crdt.serializeMessage(args[1], "inactive", type));
         }
     }
@@ -123,6 +124,7 @@ public class Aggregator {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
             if(changed) {
+                crdt.incVersion();
                 for(Integer i : neighbours){
                     pushAggregator.send(crdt.serializeState());
                 }
