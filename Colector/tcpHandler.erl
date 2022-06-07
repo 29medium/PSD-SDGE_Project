@@ -96,11 +96,9 @@ userHandler(Sock,LoginManager, PushSocket) ->
 					userHandler(Sock,LoginManager, PushSocket)
 			end;
 		{tcp_closed, _} ->
-			io:format("tcp closed\n"),
-			LoginManager ! {logout, self()};
+			io:format("tcp closed\n");
 		{tcp_error, _, _} ->
-			io:format("tcp error\n"),
-			LoginManager ! {logout, self()}
+			io:format("tcp error\n")
   	end.
 
 autenticado(Sock,LoginManager,User, PushSocket) ->

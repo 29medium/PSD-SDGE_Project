@@ -1,6 +1,8 @@
 package Aggregator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -107,17 +109,20 @@ public class CRDT {
         return null;
     }
 
-    public String validatePercentage() {
+    public List<String> validatePercentage() {
         int zone_online = (int) devices.get(own_port).values().stream().filter(x -> x.isOnline()).count();
         int total_online = devices.values().stream().map(x -> (int) x.values().stream().filter(y -> y.isOnline()).count()).mapToInt(Integer::intValue).sum();
-        int new_percentage = total_online==0 ? 0 : zone_online / total_online * 100;
+        int new_percentage = total_online==0 ? 0 : zone_online / total_online * 10;
 
-        String res = null;
+        List<String> res = new ArrayList<>();
 
-        if(new_percentage/10 > percentage_online/10) {
-            res = "percentUp-" + new_percentage/10 + "0";
-        } else if(new_percentage/10 > percentage_online/10) {
-            res = "percentDown-" + new_percentage/10 + "0";
+        if(new_percentage > percentage_online) {
+            for(int i = 1; i <= new_percentage && i < 10; i++)
+                res.add("percentUp-" + i + "0");
+        } else if(new_percentage < percentage_online) {
+            for(int i = 9 ; i>=new_percentage && i > 0; i--){
+                res.add("percentDown-" + i + "0");
+            }
         }
 
         percentage_online = new_percentage;

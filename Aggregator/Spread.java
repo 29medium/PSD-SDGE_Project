@@ -29,10 +29,8 @@ public class Spread implements Runnable {
                 }
             }
 
-            String percent = crdt.validatePercentage();
-            if(percent!=null) {
+            for (String percent : crdt.validatePercentage())
                 pub.send(percent);
-            }
         }
     }
 }

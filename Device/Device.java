@@ -8,7 +8,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +28,7 @@ public class Device {
             tokens = s.nextLine().split(":");
             String[] events = tokens[1].split(",");
             res.put(tokens[0], Arrays.asList(events));
+            System.out.println(tokens[0]);
         }
         s.close();
         return res;
@@ -48,6 +48,8 @@ public class Device {
         DataOutputStream out = new DataOutputStream(s.getOutputStream());
         DataInputStream in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
 
+        Map<String,Integer> counter = new HashMap<>();
+
         out.write(("login " + id + " " + passwd + " " + type + "\n").getBytes());
         out.flush();
 
@@ -57,13 +59,18 @@ public class Device {
         if(size > 0) {
             Map<String,List<String>> events = parseEvents("files/devices");
             
-            int i = 10;
-            while(i>0) {
-                Thread.sleep(1000);
-                String e = events.get(type).get(new Random().nextInt(events.size()));
+            int i = 0;
+            while(i<100) {
+                Thread.sleep(100);
+                String e = events.get(type).get(new Random().nextInt(events.get(type).size()));
+                counter.putIfAbsent(e, 0);
+                counter.put(e,counter.get(e)+1);
                 out.write(("event " + e + "\n").getBytes());
                 out.flush();
-                i--;
+                i++;
+            }
+            for(Map.Entry<String,Integer> entry : counter.entrySet()){
+                System.out.println(entry.getKey() + " - " + entry.getValue());
             }
         }
         s.close();

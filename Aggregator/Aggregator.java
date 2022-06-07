@@ -68,10 +68,9 @@ public class Aggregator {
                 pub.send(record_total);
             }
 
-            String percent = crdt.validatePercentage();
-            if(percent!=null) {
+            for (String percent : crdt.validatePercentage())
                 pub.send(percent);
-            }
+
         } else if(args[0].equals("logout")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.setOnline(false);
@@ -84,11 +83,10 @@ public class Aggregator {
             if(offline!=null) {
                 pub.send(offline);
             }
-
-            String percent = crdt.validatePercentage();
-            if(percent!=null) {
+            
+            for (String percent : crdt.validatePercentage())
                 pub.send(percent);
-            }
+
         } else if(args[0].equals("event")) {
             Device d = this.crdt.getDevice(this.port, args[1]);
             d.addEvent(args[2]);
