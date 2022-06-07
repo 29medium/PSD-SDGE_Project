@@ -18,7 +18,13 @@ run(Port) ->
 	loginManager:run(),
 	LoginManager = whereis(loginManager),
 	io:format("pid: ~p\n",[LoginManager]),
-	acceptor(LSock,LoginManager, PushSocket).
+
+	%acceptor(LSock,LoginManager,PushSocket).
+	spawn(fun() -> acceptor(LSock,LoginManager, PushSocket) end),
+  	receive
+		  after infinity ->
+			  ok
+	end.
 
 acceptor(LSock,LoginManager, PushSocket) ->
   {Result, Sock} = gen_tcp:accept(LSock),
@@ -28,7 +34,7 @@ acceptor(LSock,LoginManager, PushSocket) ->
   		spawn(fun() -> acceptor(LSock,LoginManager, PushSocket) end),
   		userHandler(Sock,LoginManager, PushSocket);
 	_ -> 
-		%io:format("Erro: ~p\n",[Result]),
+		io:format("Erro: ~p\n",[Result]),
 		acceptor(LSock,LoginManager,PushSocket)
 	end.
 userHandler(Sock,LoginManager, PushSocket) ->
