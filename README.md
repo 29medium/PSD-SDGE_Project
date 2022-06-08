@@ -43,11 +43,3 @@ Event ->
 
 **exemplo:**
 5,1201,state,user1~user1:car:true:false:brake%2!turn-left%1!hand-brake-ok%4!accelerate%2!hand-brake-off%3!turn-right%1
-
-
-### O QUE FALTA FAZER
-* corrigir notificações up e down
-* melhorar menus caso haja tempo
-* sockets erlang
-* comentários
-* relatório

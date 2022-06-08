@@ -128,7 +128,7 @@ public class Aggregator {
                 }
                 changed = false;
             }
-        }, 15, 15, TimeUnit.SECONDS);
+        }, 5, 5, TimeUnit.SECONDS);
 
 
         // PULL do coletor e PUB para os clientes
