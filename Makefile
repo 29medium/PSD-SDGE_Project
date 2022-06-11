@@ -10,6 +10,6 @@ java:
 	
 clean:
 	-@rm Aggregator/*.class
-	-@rm Colector/*.beam
+	-@rm Collector/*.beam
 	-@rm Client/*.class
 	-@rm Device/*.class
