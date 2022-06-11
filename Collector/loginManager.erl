@@ -20,6 +20,7 @@ logout(User) ->
 	?MODULE ! {logout, User, self()},
 	receiveReply().
 
+% loop que recebe e trata mensagens de login / logout
 loginManager(Map) ->
   	receive
     	{create_account, User, Pass, From} ->

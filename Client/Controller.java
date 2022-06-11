@@ -6,16 +6,14 @@ import java.util.Scanner;
 
 import org.zeromq.ZMQ;
 
+// Classe responsável pelo controlador
 public class Controller {
-    // classe that saves the state of active notifications
     private Notification notification;
-    // scanner to read input
     private Scanner s;
-    // socket request/reply
     private ZMQ.Socket req;
-    // socket publish/subscribe
     private ZMQ.Socket sub;
 
+    // Construtor da classe Controller
     public Controller(ZMQ.Socket req, ZMQ.Socket sub, Map<String, List<String>> types) {
         this.s = new Scanner(System.in);
         this.notification = new Notification(types);
@@ -23,22 +21,17 @@ public class Controller {
         this.sub = sub;
     }
 
-    // read int between min and max
+    // Método que lê um inteiro entre o intervalo 
     private int lerInt(int min, int max){
         int n = -1;
-        String str;
-        if(max  < 100)
-            str = "Insira uma opção:";
-        else
-            str = "Insira um valor de 0 a 100:";
 
         do{
-            System.out.println(str);
+            View.printInsertOption();
             try {
                 String line = s.nextLine();
                 n = Integer.parseInt(line);
             } catch (NumberFormatException nfe) {
-                System.out.println("Opção inválida");
+                View.printInvalidOption();
                 n = -1;
             }
         } while (n < min || n > max);
@@ -46,7 +39,7 @@ public class Controller {
         return n;
     }
 
-    // notification1 state handler
+    // Método que trata do estado da notificação 1
     private void notification1(int command){
         int op;
         String type;
@@ -66,7 +59,7 @@ public class Controller {
         }
     }
 
-    // notification2 state handler
+    // Método que trata do estado da notificação 2
     private void notification2(int command){
         int op;
         String type;
@@ -99,7 +92,7 @@ public class Controller {
         }
     }
 
-    // notification 3 and 4 state handler
+    // Método que trata do estado da notificação 3 e 4
     private void notification34(int command){
         int op,value;
         List<String> values = notification.getXUsedList(command);
@@ -137,7 +130,7 @@ public class Controller {
         }
     }
 
-     // request 1 and 4 handler
+    // Método que trata do pedido 1 e 4
     private void request14(int command){
         int op;
         List<String> values;
@@ -154,36 +147,33 @@ public class Controller {
                 String type = notification.getType(op - 1);
                 req.send("1,"+ type);
                 String res = req.recvStr();
-                System.out.println("Número de dispositivos do tipo " + type + " online: " + res);
+                View.printRequest1(type, res);
             }else if(command == 4){
                 String event = notification.getEvent(op - 1);
                 req.send("4,"+ event);
                 String res = req.recvStr();
-                System.out.println("Número de eventos do tipo " + event + ": " + res);
+                View.printRequest4(event, res);
             }
         }
     }
 
-    // request 2 handler
+    // Método que trata do pedido 2
     private void request2(){
-        System.out.println("Insira um ID de dispositivo:");
+        View.printInsertId();
         String id = s.nextLine();
 
         req.send("2,"+ id);
-        if(Boolean.parseBoolean(req.recvStr()))
-            System.out.println("O dispositivo " + id + " está online no sistema");
-        else
-            System.out.println("O dispositivo " + id + " não está online no sistema");
+        View.printRequest2(id, Boolean.parseBoolean(req.recvStr()));
     }
 
-    // request 3 handler
+    // Método que trata do pedido 3
     private void request3(){
         req.send("3");
         String res = req.recvStr();
-        System.out.println("Número de dispositivos ativos no sistema: " + res);
+        View.printRequest3(res);    
     }
 
-    // controller for request and notifications
+    // Método com controlador para pedidos e notificações
     private void controller2(int type) {
         int command;
         boolean on = true;
@@ -230,7 +220,7 @@ public class Controller {
         }
     }
 
-    // main controller
+    // Método que chama o controlador principal
     public void controller() {
         int command;
         boolean on = true;

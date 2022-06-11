@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-//this classe saves the state of the active notifications
+// Classe que guarda o estado das notificações ativas
 public class Notification {
     //map <type,list events> 
     private Map<String, List<String>> types;
@@ -21,13 +21,14 @@ public class Notification {
     //set <active percent> notification4
     private Set<Integer> notification4;
 
+    // Construtor da classe Notification
     public Notification(Map<String, List<String>> types) {
         this.types = types;
 
         notification1 = new HashMap<>();
         notification2 = new HashMap<>();
 
-        //initialize all types with state false
+        // Iniciliza todos os tipos a false
         for(String t : types.keySet()) {
             notification1.put(t, false);
             notification2.put(t, false);
@@ -39,7 +40,7 @@ public class Notification {
         notification4 = new TreeSet<>();
     }
 
-    // return for a given notification(1 or 2) all types and it state
+    // Método que retorna todos os tipos e o seu estado
     public List<String> getTypes(int noti) {
         List<String> res = new ArrayList<>();
 
@@ -53,7 +54,7 @@ public class Notification {
         return res;
     }
 
-    // return for notification 3 or 4, a list of active percents
+    // Método que retorna uma lista dos tipos ativos
     public List<String> getXUsedList(int noti) {
         Set<Integer> l;
         if (noti == 3) 
@@ -69,7 +70,7 @@ public class Notification {
         return res;
     }
 
-    // return for notification 3 or 4, a list of innactive percents
+    // Método que retorna a lista da percentagens inatvias, para noti 3 ou 4
     public List<String> getXUnusedList(int command){
         Set<Integer> l;
         List<String> values = new ArrayList<>();
@@ -88,7 +89,7 @@ public class Notification {
         return values;
     }
 
-    // return for notification 3 or 4, return percent (int) on the given index
+    // Método que retorna a percentagem
     public int getX(int command,int index){
         Set<Integer> l;
         if (command == 3) 
@@ -108,7 +109,7 @@ public class Notification {
         return res;
     }
 
-    // For notification 1 or 2, change the state of a given type to the opposite and return it
+    // Metodo que inverte o estado de uma subscrição
     public boolean setOpposite(int noti, String type) {
         boolean r;
         if (noti == 1){
@@ -122,7 +123,7 @@ public class Notification {
         return r;
     }
 
-    // For notification 3 or 4, add percent value v
+    // Metodo que adiciona o valor v ao noti 3 ou 4
     public void setX(int noti, int v) {
         if (noti == 3)
             notification3.add(v);
@@ -130,7 +131,7 @@ public class Notification {
             notification4.add(v);
     }
 
-    // For notification 3 or 4, returns true if value v is on the Set<int>
+    // Método que verifica se o noti 3 ou 4 contem o valor v 
     public boolean containsX(int noti, int v) {
         if (noti == 3)
             return notification3.contains(v);
@@ -138,7 +139,7 @@ public class Notification {
             return notification4.contains(v);
     }
 
-    // For notification 3 or 4, remove value v
+    // Método que remove o valor v do noti 3 ou 4
     public void removeX(int noti, int v) {
         if (noti == 3){
             if (notification3.contains(v))
@@ -147,12 +148,12 @@ public class Notification {
                 notification4.remove(v);
     }
 
-    // return the type corresponding to a given id
+    // Método que retorna o tipo correspondente a um id
     public String getType(int id) {
         return (new ArrayList<>(types.keySet())).get(id);
     }
 
-    // return the event corresponding to a given id
+    // Método que retorna um evento correspondente a um id
     public String getEvent(int id) {
         List<String> events = new ArrayList<>();
 
@@ -163,12 +164,12 @@ public class Notification {
         return events.get(id);
     }
 
-    // return a list with all types
+    // Método que retorna a lista com todos os tipos
     public List<String> getTypes() {
         return new ArrayList<>(types.keySet());
     }
 
-    // return a list with all events
+    // Método que retorna a lista com todos os eventos
     public List<String> getEvents() {
         List<String> events = new ArrayList<>();
 
@@ -179,12 +180,12 @@ public class Notification {
         return events;
     }
 
-    // return isNot2All state
+    // Método que retorna o estado isNot2All
     public boolean isNot2All() {
         return notification2All;
     }
 
-    // change notification2 state
+    // Método que muda o estado do notification 2
     public void setNot2All(boolean not2All) {
         this.notification2All = not2All;
     }

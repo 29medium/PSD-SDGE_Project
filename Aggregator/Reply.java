@@ -2,15 +2,18 @@ package Aggregator;
 
 import org.zeromq.ZMQ;
 
+// Classe com thread que corre o socket reply
 public class Reply implements Runnable {
     private ZMQ.Socket rep;
     private CRDT crdt;
 
+    // Construtor da classe reply
     public Reply(ZMQ.Socket rep, CRDT crdt) {
         this.rep = rep;
         this.crdt = crdt;
     }
 
+    // Método que intrepreta a mensagem do cliente e envia a resposta
     private void interpreter(String msg) {
         String res = null;
         String[] args = msg.split(",");
@@ -31,6 +34,7 @@ public class Reply implements Runnable {
         rep.send(res);
     }
     
+    // Método que corre a thread
     public void run() {
         while(true) {
             byte[] msg = rep.recv();

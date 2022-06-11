@@ -3,6 +3,7 @@ package Aggregator;
 import java.util.HashMap;
 import java.util.Map;
 
+// classe que representa um device
 public class Device {
     private String id;
     private String type;
@@ -10,6 +11,7 @@ public class Device {
     private boolean active;
     private Map<String, Integer> events;
 
+    // Inicialização do Device por argumentos
     public Device(String id, String type, boolean online, boolean active) {
         this.id = id;
         this.type = type;
@@ -18,42 +20,49 @@ public class Device {
         this.events = new HashMap<>();
     }
     
+    // Inicialização do Device por uma String serializada
     public Device(String serialized){
         this.deserialize(serialized);
     }
 
+    // método que retorna o id
     public String getId() {
         return this.id;
     }
-
+    // método que altera o id
     public void setId(String id) {
         this.id = id;
     }
-
+    // método que retorna o tipo
     public String getType() {
         return this.type;
     }
 
+    // método que altera o tipo
     public void setType(String type) {
         this.type = type;
     }
 
+    // metodo que retorsa de device se encontra online
     public boolean isOnline() {
         return this.online;
     }
 
+    // metodo que altera o estado de online
     public void setOnline(boolean online) {
         this.online = online;
     }
-
+    // método que retorna se dispositivo se encontra ativo
     public boolean isActive() {
         return this.active;
     }
 
+    // metodo que altera o estado de atividade
     public void setActive(boolean active) {
         this.active = active;
     }
 
+    // metodo que insere um novo evento / incrementa o counter
     public void addEvent(String event) {
         if(events.containsKey(event)) {
             int counter = events.get(event);
@@ -64,6 +73,7 @@ public class Device {
         }
     }
 
+    // método que retorna quandos eventos ocorreram de um determinado tipo
     public int getNumEvents(String event) {
         if(events.containsKey(event)) {
             return events.get(event);
@@ -71,8 +81,9 @@ public class Device {
             return 0;
     }
 
+    // método que serializa o Device
+    //id:type:online:active:event1_int<event2_int<event3_int
     public String serialize() {
-        //id:type:online:active:event1_int<event2_int<event3_int
         StringBuilder sb = new StringBuilder();
         sb.append(id)
           .append(":")
@@ -91,6 +102,7 @@ public class Device {
         return s.substring(0, s.length() - 1);
     }
 
+    // método que deserializa o Device através de uma String
     private void deserialize(String serialized){
         String[] args = serialized.split(":");
 

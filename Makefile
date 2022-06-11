@@ -1,7 +1,7 @@
-build: clean coletor java
+build: coletor java
 
 coletor:
-	erlc -o Colector/ Colector/tcpHandler.erl Colector/loginManager.erl
+	erlc -o Collector/ Collector/tcpHandler.erl Collector/loginManager.erl
 
 java:
 	javac -cp .:dependencies/jar/jeromq-0.5.2.jar Aggregator/*.java
